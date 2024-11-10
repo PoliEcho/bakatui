@@ -105,6 +105,36 @@ void login(std::string username, std::string password) {
 
   access_token = resp_parsed["access_token"];
 
+  // DEBUG
   std::cout << "access token: " << access_token << std::endl;
+}
+
+void refresh_access_token() {
+  std::string savedir_path = std::getenv("HOME");
+  savedir_path.append("/.local/share/bakatui");
+  std::string authfile_path = std::string(savedir_path) + "/auth";
+
+  std::ifstream authfile(authfile_path);
+  json authfile_parsed = json::parse(authfile);
+
+  std::string refresh_token = authfile_parsed["refresh_token"];
+
+  std::string req_data =
+      std::format("Authorization=Bearer&client_id=ANDR&grant_type=refresh_"
+                  "token&refresh_token={}",
+                  refresh_token);
+
+  std::string response = send_curl_request("api/login", "POST", req_data);
+
+  {
+    std::ofstream authfile_out;
+    authfile_out.open(authfile_path);
+    authfile_out << response;
+    authfile_out.close();
+  }
+
+  json resp_parsed = json::parse(response);
+
+  access_token = resp_parsed["access_token"];
 }
 } // namespace bakaapi
