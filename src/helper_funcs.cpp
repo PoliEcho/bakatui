@@ -32,3 +32,11 @@ void safe_exit(int code) {
 
   exit(code);
 }
+
+std::string bool_to_string(bool bool_in) {
+  if (bool_in) {
+    return "true";
+  } else {
+    return "false";
+  }
+}

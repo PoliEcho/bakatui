@@ -1,6 +1,7 @@
 #include "main.h"
 #include "color.h"
 #include "helper_funcs.h"
+#include "main_menu.h"
 #include "net.h"
 #include <csignal>
 #include <curl/curl.h>
@@ -9,7 +10,6 @@
 #include <regex>
 #include <string>
 #include <unistd.h>
-#include "main_menu.h"
 
 std::string baka_api_url;
 
@@ -22,9 +22,9 @@ int main(int argc, char **argv) {
 
   // error signal handlers
   signal(SIGSEGV, safe_exit);
-  
-  main_menu();
 
+  //  main_menu();
+  // bakaapi::is_logged_in();
   /*
   std::cout << "enter school bakalari url:\n";
   while (true) {
@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
   if (baka_api_url.back() != '/') {
     baka_api_url.append("/");
   }
-
+*/
   {
     std::string username;
     std::cout << "enter username: ";
@@ -59,7 +59,6 @@ int main(int argc, char **argv) {
     // std::cin >> password;
 
     bakaapi::login(username, password);
-    
-  } */
+  }
   return 0;
 }
