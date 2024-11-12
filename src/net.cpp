@@ -109,6 +109,8 @@ void login(std::string username, std::string password) {
   std::cout << "access token: " << access_token << std::endl;
 }
 
+
+
 void refresh_access_token() {
   std::string savedir_path = std::getenv("HOME");
   savedir_path.append("/.local/share/bakatui");

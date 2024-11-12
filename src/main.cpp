@@ -9,6 +9,7 @@
 #include <regex>
 #include <string>
 #include <unistd.h>
+#include "main_menu.h"
 
 std::string baka_api_url;
 
@@ -21,27 +22,10 @@ int main(int argc, char **argv) {
 
   // error signal handlers
   signal(SIGSEGV, safe_exit);
+  
+  main_menu();
 
-  /*initscr();
-
-  // creating a window;
-  // with height = 15 and width = 10
-  // also with start x axis 10 and start y axis = 20
-  WINDOW *win = newwin(15, 17, 2, 10);
-  refresh();
-
-  // making box border with default border styles
-  box(win, 0, 0);
-
-  // move and print in window
-  mvwprintw(win, 0, 1, "Greeter");
-  mvwprintw(win, 1, 1, "Hello");
-
-  // refreshing the window
-  wrefresh(win);
-
-  getch();
-  endwin(); */
+  /*
   std::cout << "enter school bakalari url:\n";
   while (true) {
     std::cout << "(or q to quit )";
@@ -75,6 +59,7 @@ int main(int argc, char **argv) {
     // std::cin >> password;
 
     bakaapi::login(username, password);
-  }
+    
+  } */
   return 0;
 }
