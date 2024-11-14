@@ -28,8 +28,9 @@ size_t WriteCallback(void *contents, size_t size, size_t nmemb,
   return totalSize;
 }
 
-std::string send_curl_request(std::string endpoint, std::string type,
-                              std::string req_data) {
+std::tuple<std::string, int> send_curl_request(std::string endpoint,
+                                               std::string type,
+                                               std::string req_data) {
   std::string response;
   std::string url = baka_api_url + endpoint;
 
@@ -62,9 +63,12 @@ std::string send_curl_request(std::string endpoint, std::string type,
   }
   curl_easy_perform(curl); // Perform the request
 
+  int http_code = 0;
+  curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+
   curl_easy_cleanup(curl); // Cleanup
 
-  return response;
+  return {response, http_code};
 }
 namespace bakaapi {
 
@@ -76,7 +80,12 @@ void login(std::string username, std::string password) {
       std::format("client_id=ANDR&grant_type=password&username={}&password={}",
                   username, password);
 
-  std::string response = send_curl_request("api/login", "POST", req_data);
+  auto [response, http_code] = send_curl_request("api/login", "POST", req_data);
+  if (http_code != 200) {
+    std::cerr << RED "[ERROR] " << RESET << http_code
+              << "is non 200 response\n";
+    safe_exit(55);
+  }
 
   std::string savedir_path = std::getenv("HOME");
   savedir_path.append("/.local/share/bakatui");
@@ -124,7 +133,12 @@ void refresh_access_token() {
                   "token&refresh_token={}",
                   refresh_token);
 
-  std::string response = send_curl_request("api/login", "POST", req_data);
+  auto [response, http_code] = send_curl_request("api/login", "POST", req_data);
+  if (http_code != 200) {
+    std::cerr << RED "[ERROR] " << RESET << http_code
+              << "is non 200 response\n";
+    safe_exit(55);
+  }
 
   {
     std::ofstream authfile_out;
@@ -137,4 +151,6 @@ void refresh_access_token() {
 
   access_token = resp_parsed["access_token"];
 }
+
+bool is_logged_in() {}
 } // namespace bakaapi

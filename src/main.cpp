@@ -23,9 +23,6 @@ int main(int argc, char **argv) {
   // error signal handlers
   signal(SIGSEGV, safe_exit);
 
-  //  main_menu();
-  // bakaapi::is_logged_in();
-  /*
   std::cout << "enter school bakalari url:\n";
   while (true) {
     std::cout << "(or q to quit )";
@@ -46,7 +43,7 @@ int main(int argc, char **argv) {
   if (baka_api_url.back() != '/') {
     baka_api_url.append("/");
   }
-*/
+
   {
     std::string username;
     std::cout << "enter username: ";
@@ -59,6 +56,8 @@ int main(int argc, char **argv) {
     // std::cin >> password;
 
     bakaapi::login(username, password);
+
+    main_menu();
   }
   return 0;
 }

@@ -57,10 +57,7 @@ void main_menu() {
   /* Print a border around the main window and print a title */
   box(my_menu_win, 0, 0);
 
-  char title_text[40] = "Main Menu - login status: ";
-  //  strcat(title_text, bool_to_string(bakaapi::is_logged_in()).c_str());
-
-  print_in_middle(my_menu_win, 1, 0, 40, title_text, COLOR_PAIR(1));
+  print_in_middle(my_menu_win, 1, 0, 40, "Main Menu", COLOR_PAIR(1));
   mvwaddch(my_menu_win, 2, 0, ACS_LTEE);
   mvwhline(my_menu_win, 2, 1, ACS_HLINE, 38);
   mvwaddch(my_menu_win, 2, 39, ACS_RTEE);
