@@ -6,6 +6,7 @@
 #include <csignal>
 #include <curl/curl.h>
 #include <curses.h>
+#include <fstream>
 #include <iostream>
 #include <regex>
 #include <string>
@@ -23,41 +24,56 @@ int main(int argc, char **argv) {
   // error signal handlers
   signal(SIGSEGV, safe_exit);
 
-  std::cout << "enter school bakalari url:\n";
-  while (true) {
-    std::cout << "(or q to quit )";
-    std::cin >> baka_api_url;
-
-    const std::regex url_regex_pattern(
-        R"((http|https)://(www\.)?[a-zA-Z0-9@:%._\+~#?&//=]{2,256}\.[a-z]{2,6}(/\S*)?)");
-
-    if (std::regex_match(baka_api_url, url_regex_pattern)) {
-      break;
-    } else if (baka_api_url == "q") {
-      std::cerr << GREEN "[NOTICE] " << RESET "user quit\n";
-      return 255;
-    }
-    std::cerr << "enter valid url using following pattern "
-                 "[(http|https)://school.bakalari.url]\n";
-  }
-  if (baka_api_url.back() != '/') {
-    baka_api_url.append("/");
-  }
-
   {
-    std::string username;
-    std::cout << "enter username: ";
-    std::cin >> username;
-    std::string password;
-
-    password = getpass("enter password: ");
-    // DEBUG
-    // std::cout << "\nenter password: ";
-    // std::cin >> password;
-
-    bakaapi::login(username, password);
-
-    main_menu();
+    std::string savedir_path = std::getenv("HOME");
+    savedir_path.append("/.local/share/bakatui");
+    std::string urlfile_path = std::string(savedir_path) + "/url";
+    std::ifstream urlfile;
+    urlfile.open(urlfile_path);
+    urlfile >> baka_api_url;
+    urlfile.close();
   }
+
+  if (baka_api_url.empty()) {
+
+    std::cout << "enter school bakalari url:\n";
+    while (true) {
+      std::cout << "(or q to quit )";
+      std::cin >> baka_api_url;
+
+      const std::regex url_regex_pattern(
+          R"((http|https)://(www\.)?[a-zA-Z0-9@:%._\+~#?&//=]{2,256}\.[a-z]{2,6}(/\S*)?)");
+
+      if (std::regex_match(baka_api_url, url_regex_pattern)) {
+        break;
+      } else if (baka_api_url == "q") {
+        std::cerr << GREEN "[NOTICE] " << RESET "user quit\n";
+        return 255;
+      }
+      std::cerr << "enter valid url using following pattern "
+                   "[(http|https)://school.bakalari.url]\n";
+    }
+    if (baka_api_url.back() != '/') {
+      baka_api_url.append("/");
+    }
+
+    {
+      std::string username;
+      std::cout << "enter username: ";
+      std::cin >> username;
+      std::string password;
+
+      password = getpass("enter password: ");
+      // DEBUG
+      // std::cout << "\nenter password: ";
+      // std::cin >> password;
+
+      bakaapi::login(username, password);
+    }
+  } else {
+    bakaapi::is_logged_in();
+  }
+  main_menu();
+
   return 0;
 }

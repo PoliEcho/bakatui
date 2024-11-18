@@ -102,14 +102,23 @@ void login(std::string username, std::string password) {
     std::cerr << "cannot access ~/.local/share/bakatui\n";
     safe_exit(100);
   }
-  std::string authfile_path = std::string(savedir_path) + "/auth";
   {
 
+    std::string authfile_path = std::string(savedir_path) + "/auth";
     std::ofstream authfile;
     authfile.open(authfile_path);
     authfile << response;
     authfile.close();
   }
+
+  {
+    std::string urlfile_path = std::string(savedir_path) + "/url";
+    std::ofstream urlfile;
+    urlfile.open(urlfile_path);
+    urlfile << baka_api_url;
+    urlfile.close();
+  }
+
   json resp_parsed = json::parse(response);
 
   access_token = resp_parsed["access_token"];
