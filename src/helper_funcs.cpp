@@ -1,5 +1,7 @@
 #include <csignal>
 #include <curses.h>
+#include <dirent.h>
+#include <filesystem>
 #include <iostream>
 #include <stdio.h>
 #include <string>
@@ -34,9 +36,34 @@ void safe_exit(int code) {
 }
 
 std::string bool_to_string(bool bool_in) {
-  if (bool_in) {
-    return "true";
+  return bool_in ? "true" : "false";
+}
+
+std::string SoRAuthFile(bool save, std::string data){
+
+  std::string savedir_path = std::getenv("HOME");
+  savedir_path.append("/.local/share/bakatui");
+
+  DIR *savedir = opendir(savedir_path.c_str());
+  if (savedir) {
+    /* Directory exists. */
+    closedir(savedir);
+  } else if (ENOENT == errno) {
+    /* Directory does not exist. */
+    std::filesystem::create_directories(savedir_path);
   } else {
-    return "false";
+    /* opendir() failed for some other reason. */
+    std::cerr << "cannot access ~/.local/share/bakatui\n";
+    safe_exit(100);
+  }
+
+  std::string authfile_path = std::string(savedir_path) + "/auth";
+
+  if(save){
+
+  } else {
+
   }
 }
+
+

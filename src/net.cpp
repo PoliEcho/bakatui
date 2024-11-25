@@ -161,5 +161,18 @@ void refresh_access_token() {
   access_token = resp_parsed["access_token"];
 }
 
-bool is_logged_in() {}
+json get_grades() {
+  if(access_token.empty()) {
+    
+  }
+      std::string req_data =
+      std::format("Authorization=Bearer&access_token={}",
+                  access_token);
+
+    auto [response, http_code] = send_curl_request("api/3/marks", "POST", req_data);
+
+    
+
+    
+}
 } // namespace bakaapi
