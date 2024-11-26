@@ -7,6 +7,7 @@
 #include <string>
 #include <termios.h>
 #include <unistd.h>
+#include <fstream>
 
 void safe_exit(int code) {
   switch (code) {
@@ -60,9 +61,15 @@ std::string SoRAuthFile(bool save, std::string data){
   std::string authfile_path = std::string(savedir_path) + "/auth";
 
   if(save){
-
+    std::ofstream authfile(authfile_path);
+    authfile << data;
+    authfile.close();
+    return "";
   } else {
-
+    std::ifstream authfile(authfile_path);
+    authfile >> data;
+    authfile.close();
+    return data;
   }
 }
 

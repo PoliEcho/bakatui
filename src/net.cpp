@@ -52,9 +52,6 @@ std::tuple<std::string, int> send_curl_request(std::string endpoint,
 
     if (type == "POST") {
       curl_easy_setopt(curl, CURLOPT_POST, 1L);
-    } else {
-      std::cerr << RED "[ERROR] " << RESET "invalid method\n";
-      safe_exit(-5);
     }
 
   } else {
@@ -87,31 +84,12 @@ void login(std::string username, std::string password) {
     safe_exit(55);
   }
 
-  std::string savedir_path = std::getenv("HOME");
-  savedir_path.append("/.local/share/bakatui");
-
-  DIR *savedir = opendir(savedir_path.c_str());
-  if (savedir) {
-    /* Directory exists. */
-    closedir(savedir);
-  } else if (ENOENT == errno) {
-    /* Directory does not exist. */
-    std::filesystem::create_directories(savedir_path);
-  } else {
-    /* opendir() failed for some other reason. */
-    std::cerr << "cannot access ~/.local/share/bakatui\n";
-    safe_exit(100);
-  }
-  {
-
-    std::string authfile_path = std::string(savedir_path) + "/auth";
-    std::ofstream authfile;
-    authfile.open(authfile_path);
-    authfile << response;
-    authfile.close();
-  }
+  SoRAuthFile(true, response);
 
   {
+    std::string savedir_path = std::getenv("HOME");
+    savedir_path.append("/.local/share/bakatui");
+  
     std::string urlfile_path = std::string(savedir_path) + "/url";
     std::ofstream urlfile;
     urlfile.open(urlfile_path);
@@ -128,12 +106,8 @@ void login(std::string username, std::string password) {
 }
 
 void refresh_access_token() {
-  std::string savedir_path = std::getenv("HOME");
-  savedir_path.append("/.local/share/bakatui");
-  std::string authfile_path = std::string(savedir_path) + "/auth";
 
-  std::ifstream authfile(authfile_path);
-  json authfile_parsed = json::parse(authfile);
+  json authfile_parsed = json::parse(SoRAuthFile(false, ""));
 
   std::string refresh_token = authfile_parsed["refresh_token"];
 
@@ -149,12 +123,7 @@ void refresh_access_token() {
     safe_exit(55);
   }
 
-  {
-    std::ofstream authfile_out;
-    authfile_out.open(authfile_path);
-    authfile_out << response;
-    authfile_out.close();
-  }
+  SoRAuthFile(true, response);
 
   json resp_parsed = json::parse(response);
 
@@ -163,13 +132,14 @@ void refresh_access_token() {
 
 json get_grades() {
   if(access_token.empty()) {
-    
+    json authfile_parsed = json::parse(SoRAuthFile(false, ""));
+    access_token = authfile_parsed["access_token"];
   }
       std::string req_data =
       std::format("Authorization=Bearer&access_token={}",
                   access_token);
 
-    auto [response, http_code] = send_curl_request("api/3/marks", "POST", req_data);
+    auto [response, http_code] = send_curl_request("api/3/marks", "GET", req_data);
 
     
 
