@@ -3,6 +3,7 @@
 #include "helper_funcs.h"
 #include "main_menu.h"
 #include "net.h"
+#include "helper_funcs.h"
 #include <csignal>
 #include <curl/curl.h>
 #include <curses.h>
@@ -57,21 +58,7 @@ int main(int argc, char **argv) {
       baka_api_url.append("/");
     }
 
-    {
-      std::string username;
-      std::cout << "enter username: ";
-      std::cin >> username;
-      std::string password;
-
-      password = getpass("enter password: ");
-      // DEBUG
-      // std::cout << "\nenter password: ";
-      // std::cin >> password;
-
-      bakaapi::login(username, password);
-    }
-  } else {
-    bakaapi::is_logged_in();
+    get_input_and_login();
   }
   main_menu();
 

@@ -7,9 +7,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <curl/curl.h>
+#include <curses.h>
 #include <dirent.h>
-#include <errno.h>
-#include <filesystem>
 #include <format>
 #include <fstream>
 #include <iostream>
@@ -79,8 +78,8 @@ void login(std::string username, std::string password) {
 
   auto [response, http_code] = send_curl_request("api/login", "POST", req_data);
   if (http_code != 200) {
-    std::cerr << RED "[ERROR] " << RESET << http_code
-              << "is non 200 response\n";
+    std::cerr << RED "[ERROR] " << RESET << "login failed " << http_code
+              << " is non 200 response\n";
     safe_exit(55);
   }
 
@@ -120,7 +119,7 @@ void refresh_access_token() {
   if (http_code != 200) {
     std::cerr << RED "[ERROR] " << RESET << http_code
               << "is non 200 response\n";
-    safe_exit(55);
+    get_input_and_login();
   }
 
   SoRAuthFile(true, response);
@@ -141,7 +140,9 @@ json get_grades() {
 
     auto [response, http_code] = send_curl_request("api/3/marks", "GET", req_data);
 
-    
+    if(http_code != 200) {
+      refresh_access_token();
+    }
 
     
 }

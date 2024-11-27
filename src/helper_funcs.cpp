@@ -3,11 +3,11 @@
 #include <dirent.h>
 #include <filesystem>
 #include <iostream>
-#include <stdio.h>
 #include <string>
 #include <termios.h>
 #include <unistd.h>
 #include <fstream>
+#include "net.h"
 
 void safe_exit(int code) {
   switch (code) {
@@ -32,6 +32,8 @@ void safe_exit(int code) {
   default:
     break;
   }
+
+  curl_easy_cleanup(curl);
 
   exit(code);
 }
@@ -73,4 +75,17 @@ std::string SoRAuthFile(bool save, std::string data){
   }
 }
 
+void get_input_and_login() {
+    std::string username;
+      std::cout << "enter username: ";
+      std::cin >> username;
+      std::string password;
+
+      password = getpass("enter password: ");
+      // DEBUG
+      // std::cout << "\nenter password: ";
+      // std::cin >> password;
+
+      bakaapi::login(username, password);
+}
 
