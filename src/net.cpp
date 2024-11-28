@@ -13,6 +13,7 @@
 #include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
 #include <string>
 
 using nlohmann::json;
@@ -144,6 +145,6 @@ json get_grades() {
       refresh_access_token();
     }
 
-    
+    return json::parse(response);
 }
 } // namespace bakaapi
