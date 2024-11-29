@@ -1,13 +1,13 @@
+#include "net.h"
 #include <csignal>
 #include <curses.h>
 #include <dirent.h>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <termios.h>
 #include <unistd.h>
-#include <fstream>
-#include "net.h"
 
 void safe_exit(int code) {
   switch (code) {
@@ -38,11 +38,9 @@ void safe_exit(int code) {
   exit(code);
 }
 
-std::string bool_to_string(bool bool_in) {
-  return bool_in ? "true" : "false";
-}
+std::string bool_to_string(bool bool_in) { return bool_in ? "true" : "false"; }
 
-std::string SoRAuthFile(bool save, std::string data){
+std::string SoRAuthFile(bool save, std::string data) {
 
   std::string savedir_path = std::getenv("HOME");
   savedir_path.append("/.local/share/bakatui");
@@ -62,7 +60,7 @@ std::string SoRAuthFile(bool save, std::string data){
 
   std::string authfile_path = std::string(savedir_path) + "/auth";
 
-  if(save){
+  if (save) {
     std::ofstream authfile(authfile_path);
     authfile << data;
     authfile.close();
@@ -76,16 +74,39 @@ std::string SoRAuthFile(bool save, std::string data){
 }
 
 void get_input_and_login() {
-    std::string username;
-      std::cout << "enter username: ";
-      std::cin >> username;
-      std::string password;
+  std::string username;
+  std::cout << "enter username: ";
+  std::cin >> username;
+  std::string password;
 
-      password = getpass("enter password: ");
-      // DEBUG
-      // std::cout << "\nenter password: ";
-      // std::cin >> password;
+  password = getpass("enter password: ");
+  // DEBUG
+  // std::cout << "\nenter password: ";
+  // std::cin >> password;
 
-      bakaapi::login(username, password);
+  bakaapi::login(username, password);
 }
 
+void print_in_middle(WINDOW *win, int starty, int startx, int width,
+                     char *string, chtype color) {
+  int length, x, y;
+  float temp;
+
+  if (win == NULL)
+    win = stdscr;
+  getyx(win, y, x);
+  if (startx != 0)
+    x = startx;
+  if (starty != 0)
+    y = starty;
+  if (width == 0)
+    width = 80;
+
+  length = strlen(string);
+  temp = (width - length) / 2;
+  x = startx + (int)temp;
+  wattron(win, color);
+  mvwprintw(win, y, x, "%s", string);
+  wattroff(win, color);
+  refresh();
+}

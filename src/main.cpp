@@ -2,7 +2,7 @@
 #include "color.h"
 #include "helper_funcs.h"
 #include "main_menu.h"
-#include "marks/marks.h"
+#include "marks.h"
 #include "net.h"
 #include <csignal>
 #include <curl/curl.h>

@@ -13,8 +13,6 @@ char *choices[] = {
     "login",    "Grades",  "shedule", "Komens",
     "Homework", "Absence", "Exit",    (char *)NULL,
 };
-void print_in_middle(WINDOW *win, int starty, int startx, int width,
-                     char *string, chtype color);
 
 void main_menu() {
   ITEM **my_items;
@@ -103,28 +101,4 @@ void main_menu() {
   for (i = 0; i < n_choices; ++i)
     free_item(my_items[i]);
   endwin();
-}
-
-void print_in_middle(WINDOW *win, int starty, int startx, int width,
-                     char *string, chtype color) {
-  int length, x, y;
-  float temp;
-
-  if (win == NULL)
-    win = stdscr;
-  getyx(win, y, x);
-  if (startx != 0)
-    x = startx;
-  if (starty != 0)
-    y = starty;
-  if (width == 0)
-    width = 80;
-
-  length = strlen(string);
-  temp = (width - length) / 2;
-  x = startx + (int)temp;
-  wattron(win, color);
-  mvwprintw(win, y, x, "%s", string);
-  wattroff(win, color);
-  refresh();
 }

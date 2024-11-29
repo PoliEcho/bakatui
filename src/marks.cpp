@@ -1,4 +1,5 @@
 #include "marks.h"
+#include "helper_funcs.h"
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -7,7 +8,6 @@
 #include <menu.h>
 #include <nlohmann/json.hpp>
 #include <panel.h>
-#include <vector>
 
 using nlohmann::json;
 
@@ -42,8 +42,6 @@ SOFTWARE.
 
 void init_wins(WINDOW **wins, int n, json marks_json);
 void win_show(WINDOW *win, char *label, int label_color);
-void print_in_middle(WINDOW *win, int starty, int startx, int width,
-                     char *string, chtype color);
 
 void marks_page() {
 
