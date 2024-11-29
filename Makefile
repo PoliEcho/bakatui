@@ -1,29 +1,38 @@
-CC = g++
-CC_FLAGS = -std=c++23 -s -O3 -lncurses -lcurl -lmenu -lpanel -Wall -Wextra 
-#debug flags:
-#CC_FLAGS = -ggdb -std=c++23 -lncurses -lcurl -lmenu -lpanel -Wall -Wextra
+# Compiler and flags
+CPPC = g++
+CPPC_FLAGS = -std=c++23 -s -O3 -lncurses -lcurl -lmenu -lpanel -Wall -Wextra 
+# Debug flags:
+# CPPC_FLAGS = -ggdb -std=c++23 -lncurses -lcurl -lmenu -lpanel -Wall -Wextra
 
-all: build/bin/bakatui
 
-build/bin/bakatui: build/obj/main.o build/obj/net.o build/obj/helper_funcs.o build/obj/main_menu.o build/obj/grades.o
-	$(CC) $(CC_FLAGS) build/obj/main.o build/obj/net.o build/obj/helper_funcs.o build/obj/main_menu.o build/obj/grades.o -o build/bin/bakatui
+SRC_PATH := src
+OBJ_PATH := build/obj
+BIN_PATH := build/bin
 
-build/obj/main.o: src/main.cpp
-	mkdir -p build/obj
-	mkdir -p build/bin
-	$(CC) $(CC_FLAGS) -c src/main.cpp -o build/obj/main.o
 
-build/obj/net.o: src/net.cpp
-	$(CC) $(CC_FLAGS) -c src/net.cpp -o build/obj/net.o
+SRC_FILES := $(shell find $(SRC_PATH) -name '*.cpp')
+# Generate corresponding object file paths by replacing src/ with build/obj/
+OBJ_FILES := $(patsubst $(SRC_PATH)/%.cpp,$(OBJ_PATH)/%.o,$(SRC_FILES))
 
-build/obj/helper_funcs.o: src/helper_funcs.cpp
-	$(CC) $(CC_FLAGS) -c src/helper_funcs.cpp -o build/obj/helper_funcs.o
 
-build/obj/main_menu.o: src/main_menu.cpp
-	$(CC) $(CC_FLAGS) -c src/main_menu.cpp -o build/obj/main_menu.o
+all: make-build-dir $(BIN_PATH)/bakatui
 
-build/obj/grades.o: src/grades/*.cpp
-	$(CC) $(CC_FLAGS) -c src/grades/*.cpp -o build/obj/grades.o
+
+make-build-dir:
+	mkdir -p $(OBJ_PATH)
+	mkdir -p $(OBJ_PATH)/marks
+	mkdir -p $(BIN_PATH)
+
+
+$(BIN_PATH)/bakatui: $(OBJ_FILES)
+	$(CPPC) $(CPPC_FLAGS) $^ -o $@
+
+
+$(OBJ_PATH)/%.o: $(SRC_PATH)/%.cpp
+	$(CPPC) $(CPPC_FLAGS) -c $< -o $@
+
 
 clean:
-	rm -fr build      
+	rm -fr build
+
+.PHONY: all clean make-build-dir
