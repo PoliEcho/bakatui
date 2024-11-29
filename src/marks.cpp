@@ -1,8 +1,15 @@
 #include "marks.h"
+#include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <curses.h>
+#include <fstream>
 #include <menu.h>
+#include <nlohmann/json.hpp>
 #include <panel.h>
+#include <vector>
+
+using nlohmann::json;
 
 // Thsi code is based on
 // https://github.com/tony/NCURSES-Programming-HOWTO-examples/blob/master/16-panels
@@ -33,17 +40,30 @@ SOFTWARE.
 #define NLINES 10
 #define NCOLS 40
 
-void init_wins(WINDOW **wins, int n);
+void init_wins(WINDOW **wins, int n, json marks_json);
 void win_show(WINDOW *win, char *label, int label_color);
 void print_in_middle(WINDOW *win, int starty, int startx, int width,
                      char *string, chtype color);
 
 void marks_page() {
-  WINDOW *my_wins[3];
-  PANEL *my_panels[3];
+
+  // DONT FORGET TO UNCOMMENT
+  // json resp_from_api = bakaapi::get_grades();
+  std::ifstream f("test-data/marks2.json");
+  json resp_from_api = json::parse(f);
+
+  WINDOW **my_wins;
+  size_t size_my_wins = resp_from_api["Subjects"].size();
+  my_wins = new (std::nothrow) WINDOW *[size_my_wins];
+
+  PANEL **my_panels;
+  size_t size_my_panels = resp_from_api["Subjects"].size();
+  my_panels = new (std::nothrow) PANEL *[size_my_panels];
+
   PANEL *top;
   int ch;
 
+  setlocale(LC_ALL, "");
   /* Initialize curses */
   initscr();
   start_color();
@@ -52,24 +72,25 @@ void marks_page() {
   keypad(stdscr, TRUE);
 
   /* Initialize all the colors */
-  init_pair(1, COLOR_RED, COLOR_BLACK);
-  init_pair(2, COLOR_GREEN, COLOR_BLACK);
-  init_pair(3, COLOR_BLUE, COLOR_BLACK);
-  init_pair(4, COLOR_CYAN, COLOR_BLACK);
+  for (size_t i = 0; i < 8; i++) {
+    init_pair(i, i, COLOR_BLACK);
+  }
 
-  init_wins(my_wins, 3);
+  init_wins(my_wins, resp_from_api["Subjects"].size(), resp_from_api);
 
-  /* Attach a panel to each window */   /* Order is bottom up */
-  my_panels[0] = new_panel(my_wins[0]); /* Push 0, order: stdscr-0 */
-  my_panels[1] = new_panel(my_wins[1]); /* Push 1, order: stdscr-0-1 */
-  my_panels[2] = new_panel(my_wins[2]); /* Push 2, order: stdscr-0-1-2 */
+  for (size_t i = 0; i < size_my_panels; i++) {
+    /* Attach a panel to each window Order is bottom up */
+    my_panels[i] = new_panel(my_wins[i]);
 
-  /* Set up the user pointers to the next panel */
-  set_panel_userptr(my_panels[0], my_panels[1]);
-  set_panel_userptr(my_panels[1], my_panels[2]);
-  set_panel_userptr(my_panels[2], my_panels[0]);
+    /* Set up the user pointers to the next panel */
+    if ((i + 1) < size_my_panels) {
+      set_panel_userptr(my_panels[i], my_panels[(i + 1)]);
+    } else {
+      set_panel_userptr(my_panels[i], my_panels[0]);
+    }
+  }
 
-  /* Update the stacking order. 2nd panel will be on top */
+  // Update the stacking order.
   update_panels();
 
   /* Show it on the screen */
@@ -93,16 +114,26 @@ void marks_page() {
 }
 
 /* Put all the windows */
-void init_wins(WINDOW **wins, int n) {
+void init_wins(WINDOW **wins, int n, json marks_json) {
   int x, y, i;
-  char label[80];
+  char label[1500];
 
   y = 2;
   x = 10;
+  uint8_t curent_color = 0;
   for (i = 0; i < n; ++i) {
     wins[i] = newwin(NLINES, NCOLS, y, x);
-    sprintf(label, "Window Number %d", i + 1);
-    win_show(wins[i], label, i + 1);
+    {
+      std::string sub_name = marks_json["Subjects"][i]["Subject"]["Name"];
+      std::string sub_avg_s = marks_json["Subjects"][i]["AverageText"];
+
+      sprintf(label, "%s - avg: %s", sub_name.c_str(), sub_avg_s.c_str());
+    }
+    curent_color++;
+    if (curent_color >= 7) {
+      curent_color = 1;
+    }
+    win_show(wins[i], label, curent_color);
     x += 40;
   }
 }
