@@ -2,8 +2,8 @@
 #include "color.h"
 #include "helper_funcs.h"
 #include "main_menu.h"
+#include "marks/marks.h"
 #include "net.h"
-#include "helper_funcs.h"
 #include <csignal>
 #include <curl/curl.h>
 #include <curses.h>
@@ -24,6 +24,9 @@ int main(int argc, char **argv) {
 
   // error signal handlers
   signal(SIGSEGV, safe_exit);
+
+  marks_page();
+  /*
 
   {
     std::string savedir_path = std::getenv("HOME");
@@ -61,6 +64,6 @@ int main(int argc, char **argv) {
     get_input_and_login();
   }
   main_menu();
-
+  */
   return 0;
 }

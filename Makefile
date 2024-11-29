@@ -1,7 +1,7 @@
 CC = g++
-CC_FLAGS = -std=c++23 -s -O3 -lncurses -lcurl -lmenu -Wall -Wextra 
+CC_FLAGS = -std=c++23 -s -O3 -lncurses -lcurl -lmenu -lpanel -Wall -Wextra 
 #debug flags:
-#CC_FLAGS = -ggdb -std=c++23 -lncurses -lcurl -lmenu -Wall -Wextra
+#CC_FLAGS = -ggdb -std=c++23 -lncurses -lcurl -lmenu -lpanel -Wall -Wextra
 
 all: build/bin/bakatui
 
