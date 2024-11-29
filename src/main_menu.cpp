@@ -4,9 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <curses.h>
-#include <iostream>
 #include <menu.h>
-#include <string>
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 #define CTRLD 4
