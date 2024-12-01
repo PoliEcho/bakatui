@@ -139,6 +139,9 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
 /* Show the window with a border and a label */
 void win_show(WINDOW *win, char *label, int label_color) {
   int startx, starty, height, width;
+  height = 20;
+
+  wresize(win, height, strlen(label) + 4);
 
   getbegyx(win, starty, startx);
   getmaxyx(win, height, width);
