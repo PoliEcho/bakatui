@@ -1,5 +1,6 @@
 #include "marks.h"
 #include "helper_funcs.h"
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -41,7 +42,7 @@ SOFTWARE.
 #define NCOLS 40
 
 void init_wins(WINDOW **wins, int n, json marks_json);
-void win_show(WINDOW *win, char *label, int label_color);
+void win_show(WINDOW *win, char *label, int label_color, int width);
 
 void marks_page() {
 
@@ -70,7 +71,7 @@ void marks_page() {
   keypad(stdscr, TRUE);
 
   /* Initialize all the colors */
-  for (size_t i = 0; i < 8; i++) {
+  for (uint8_t i = 0; i < 8; i++) {
     init_pair(i, i, COLOR_BLACK);
   }
 
@@ -97,7 +98,7 @@ void marks_page() {
   attroff(COLOR_PAIR(4));
   doupdate();
 
-  top = my_panels[2];
+  top = my_panels[resp_from_api["Subjects"].size() - 1];
   while ((ch = getch()) != KEY_F(1)) {
     switch (ch) {
     case 9:
@@ -109,6 +110,8 @@ void marks_page() {
     doupdate();
   }
   endwin();
+  delete[] my_wins;
+  delete[] my_panels;
 }
 
 /* Put all the windows */
@@ -131,17 +134,36 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
     if (curent_color >= 7) {
       curent_color = 1;
     }
-    win_show(wins[i], label, curent_color);
-    x += 40;
+
+    // search what mark or  label  is longest
+    size_t max_text_length = strlen(label);
+    for (int i = 0; i < marks_json["Subjects"][n]["Marks"][i].size(); i++) {
+      size_t tocomp =
+          rm_tr_le_whitespace(marks_json["Subjects"][n]["Marks"][i]["Caption"])
+              .length();
+      if (max_text_length < tocomp) {
+        max_text_length = tocomp;
+      }
+      tocomp =
+          rm_tr_le_whitespace(marks_json["Subjects"][n]["Marks"][i]["Theme"])
+              .length();
+      if (max_text_length < tocomp) {
+        max_text_length = tocomp;
+      }
+    }
+
+    int width = max_text_length + 4;
+    win_show(wins[i], label, curent_color, width);
+    x += width + 10;
   }
 }
 
 /* Show the window with a border and a label */
-void win_show(WINDOW *win, char *label, int label_color) {
-  int startx, starty, height, width;
+void win_show(WINDOW *win, char *label, int label_color, int width) {
+  int startx, starty, height;
   height = 20;
 
-  wresize(win, height, strlen(label) + 4);
+  wresize(win, height, width);
 
   getbegyx(win, starty, startx);
   getmaxyx(win, height, width);
@@ -151,5 +173,6 @@ void win_show(WINDOW *win, char *label, int label_color) {
   mvwhline(win, 2, 1, ACS_HLINE, width - 2);
   mvwaddch(win, 2, width - 1, ACS_RTEE);
 
+  print_in_middle(win, 1, 0, width, label, COLOR_PAIR(label_color));
   print_in_middle(win, 1, 0, width, label, COLOR_PAIR(label_color));
 }

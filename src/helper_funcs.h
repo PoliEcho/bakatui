@@ -6,3 +6,4 @@ std::string SoRAuthFile(bool save, std::string data);
 void get_input_and_login();
 void print_in_middle(WINDOW *win, int starty, int startx, int width,
                      char *string, chtype color);
+std::string rm_tr_le_whitespace(const std::string &s);
