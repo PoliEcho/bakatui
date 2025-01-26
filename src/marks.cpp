@@ -128,43 +128,35 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
   x = DEFAULT_X_OFFSET;
   uint8_t curent_color = 0;
   for (i = 0; i < n; ++i) {
-    wins[i] = newwin(NLINES, NCOLS, y, x);
-    {
-      std::string sub_name = marks_json["Subjects"][i]["Subject"]["Name"];
-      std::string sub_avg_s = marks_json["Subjects"][i]["AverageText"];
 
-      sprintf(label, "%s - avg: %s", sub_name.c_str(), sub_avg_s.c_str());
-    }
-    curent_color++;
-    if (curent_color >= 7) {
-      curent_color = 1;
-    }
+    // Calculate label and max_text_length to determine window width
+    std::string sub_name = marks_json["Subjects"][i]["Subject"]["Name"];
+    std::string sub_avg_s = marks_json["Subjects"][i]["AverageText"];
+    sprintf(label, "%s - avg: %s", sub_name.c_str(), sub_avg_s.c_str());
 
-    // search what mark or  label  is longest
     size_t max_text_length = strlen(label);
-    for (int i = 0; i < marks_json["Subjects"][n]["Marks"][i].size(); i++) {
-      size_t tocomp =
-          rm_tr_le_whitespace(marks_json["Subjects"][n]["Marks"][i]["Caption"])
-              .length();
-      if (max_text_length < tocomp) {
-        max_text_length = tocomp;
-      }
-      tocomp =
-          rm_tr_le_whitespace(marks_json["Subjects"][n]["Marks"][i]["Theme"])
-              .length();
-      if (max_text_length < tocomp) {
-        max_text_length = tocomp;
-      }
+    for (int j = 0; j < marks_json["Subjects"][i]["Marks"].size(); j++) {
+      std::string caption = marks_json["Subjects"][i]["Marks"][j]["Caption"];
+      std::string theme = marks_json["Subjects"][i]["Marks"][j]["Theme"];
+      caption = rm_tr_le_whitespace(caption);
+      theme = rm_tr_le_whitespace(theme);
+      max_text_length =
+          std::max({max_text_length, caption.length(), theme.length()});
     }
 
     int width = max_text_length + 4;
-    win_show(wins[i], label, curent_color, width);
+
+    // hanndle windows overflowing off screen
     if (x + width > COLS) {
       x = DEFAULT_X_OFFSET;
       y += NLINES + 10;
-    } else {
-      x += width + 5;
     }
+
+    wins[i] = newwin(NLINES, NCOLS, y, x);
+    win_show(wins[i], label, curent_color + 1, width);
+
+    curent_color = (curent_color + 1) % 7;
+    x += width + 5;
   }
 }
 
