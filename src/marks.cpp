@@ -176,5 +176,4 @@ void win_show(WINDOW *win, char *label, int label_color, int width) {
   mvwaddch(win, 2, width - 1, ACS_RTEE);
 
   print_in_middle(win, 1, 0, width, label, COLOR_PAIR(label_color));
-  print_in_middle(win, 1, 0, width, label, COLOR_PAIR(label_color));
 }
