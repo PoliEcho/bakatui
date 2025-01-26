@@ -6,6 +6,7 @@
 #include <cstring>
 #include <curses.h>
 #include <fstream>
+#include <iostream>
 #include <menu.h>
 #include <nlohmann/json.hpp>
 #include <panel.h>
@@ -41,11 +42,13 @@ SOFTWARE.
 #define NLINES 10
 #define NCOLS 40
 
+#define DEFAULT_X_OFFSET 10
+#define DEFAULT_Y_OFFSET 2
+
 void init_wins(WINDOW **wins, int n, json marks_json);
 void win_show(WINDOW *win, char *label, int label_color, int width);
 
 void marks_page() {
-
   // DONT FORGET TO UNCOMMENT
   // json resp_from_api = bakaapi::get_grades();
   std::ifstream f("test-data/marks2.json");
@@ -69,6 +72,8 @@ void marks_page() {
   cbreak();
   noecho();
   keypad(stdscr, TRUE);
+
+  std::clog << COLS << " " << LINES << std::endl;
 
   /* Initialize all the colors */
   for (uint8_t i = 0; i < 8; i++) {
@@ -119,8 +124,8 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
   int x, y, i;
   char label[1500];
 
-  y = 2;
-  x = 10;
+  y = DEFAULT_Y_OFFSET;
+  x = DEFAULT_X_OFFSET;
   uint8_t curent_color = 0;
   for (i = 0; i < n; ++i) {
     wins[i] = newwin(NLINES, NCOLS, y, x);
@@ -154,7 +159,12 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
 
     int width = max_text_length + 4;
     win_show(wins[i], label, curent_color, width);
-    x += width + 10;
+    if (x + width > COLS) {
+      x = DEFAULT_X_OFFSET;
+      y += NLINES + 10;
+    } else {
+      x += width + 5;
+    }
   }
 }
 
