@@ -5,11 +5,13 @@
 #include <cstdio>
 #include <cstring>
 #include <curses.h>
+#include <format>
 #include <fstream>
 #include <iostream>
 #include <menu.h>
 #include <nlohmann/json.hpp>
 #include <panel.h>
+#include <string>
 
 using nlohmann::json;
 
@@ -45,13 +47,16 @@ SOFTWARE.
 #define DEFAULT_X_OFFSET 10
 #define DEFAULT_Y_OFFSET 2
 
+#define DEFAULT_PADDING 4
+
 void init_wins(WINDOW **wins, int n, json marks_json);
-void win_show(WINDOW *win, char *label, int label_color, int width);
+void win_show(WINDOW *win, char *label, int label_color, int width, int height,
+              json marks_json, int SubjectIndex);
 
 void marks_page() {
   // DONT FORGET TO UNCOMMENT
   // json resp_from_api = bakaapi::get_grades();
-  std::ifstream f("test-data/marks2.json");
+  std::ifstream f("test-data/marks3.json");
   json resp_from_api = json::parse(f);
 
   WINDOW **my_wins;
@@ -127,6 +132,8 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
   y = DEFAULT_Y_OFFSET;
   x = DEFAULT_X_OFFSET;
   uint8_t curent_color = 0;
+
+  int MaxHight = 0;
   for (i = 0; i < n; ++i) {
 
     // Calculate label and max_text_length to determine window width
@@ -144,16 +151,25 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
           std::max({max_text_length, caption.length(), theme.length()});
     }
 
-    int width = max_text_length + 4;
+    int width = max_text_length + DEFAULT_PADDING;
 
     // hanndle windows overflowing off screen
     if (x + width > COLS) {
       x = DEFAULT_X_OFFSET;
-      y += NLINES + 10;
+      y += MaxHight + 2;
+      MaxHight = 0;
+    }
+
+    if (marks_json["Subjects"][i]["Marks"].size() * 2 + DEFAULT_PADDING >
+        MaxHight) {
+      MaxHight =
+          marks_json["Subjects"][i]["Marks"].size() * 2 + DEFAULT_PADDING;
     }
 
     wins[i] = newwin(NLINES, NCOLS, y, x);
-    win_show(wins[i], label, curent_color + 1, width);
+    win_show(wins[i], label, curent_color + 1, width,
+             marks_json["Subjects"][i]["Marks"].size() * 2 + DEFAULT_PADDING,
+             marks_json, i);
 
     curent_color = (curent_color + 1) % 7;
     x += width + 5;
@@ -161,9 +177,9 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
 }
 
 /* Show the window with a border and a label */
-void win_show(WINDOW *win, char *label, int label_color, int width) {
-  int startx, starty, height;
-  height = 20;
+void win_show(WINDOW *win, char *label, int label_color, int width, int height,
+              json marks_json, int SubjectIndex) {
+  int startx, starty;
 
   wresize(win, height, width);
 
@@ -176,4 +192,31 @@ void win_show(WINDOW *win, char *label, int label_color, int width) {
   mvwaddch(win, 2, width - 1, ACS_RTEE);
 
   print_in_middle(win, 1, 0, width, label, COLOR_PAIR(label_color));
+
+  char CaptionBuf[1500];
+  char ThemeBuf[1500];
+  std::string Caption;
+  int AdditionalOffset = 0;
+  for (size_t i = 0; i < marks_json["Subjects"][SubjectIndex]["Marks"].size();
+       i++) {
+    Caption = marks_json["Subjects"][SubjectIndex]["Marks"][i]["Caption"];
+    Caption = rm_tr_le_whitespace(Caption);
+    Caption.append(std::format(
+        " - {{{}}} [{}]",
+        marks_json["Subjects"][SubjectIndex]["Marks"][i]["MarkText"]
+            .get<std::string>(),
+        marks_json["Subjects"][SubjectIndex]["Marks"][i]["Weight"].get<int>()));
+    strncpy(CaptionBuf, Caption.c_str(), sizeof(CaptionBuf));
+    print_in_middle(win, 3 + i + AdditionalOffset, 0, width, CaptionBuf,
+                    COLOR_PAIR(label_color));
+
+    strncpy(ThemeBuf,
+            marks_json["Subjects"][SubjectIndex]["Marks"][i]["Theme"]
+                .get<std::string>()
+                .c_str(),
+            sizeof(ThemeBuf));
+    print_in_middle(win, 3 + i + 1 + AdditionalOffset, 0, width, ThemeBuf,
+                    COLOR_PAIR(label_color));
+    AdditionalOffset++;
+  }
 }
