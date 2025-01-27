@@ -12,6 +12,7 @@
 #include <nlohmann/json.hpp>
 #include <panel.h>
 #include <string>
+#include <algorithm>
 
 using nlohmann::json;
 
@@ -87,41 +88,66 @@ void marks_page() {
 
   init_wins(my_wins, resp_from_api["Subjects"].size(), resp_from_api);
 
-  for (size_t i = 0; i < size_my_panels; i++) {
-    /* Attach a panel to each window Order is bottom up */
-    my_panels[i] = new_panel(my_wins[i]);
-
-    /* Set up the user pointers to the next panel */
-    if ((i + 1) < size_my_panels) {
-      set_panel_userptr(my_panels[i], my_panels[(i + 1)]);
-    } else {
-      set_panel_userptr(my_panels[i], my_panels[0]);
-    }
+  // store all original window position
+  int *original_y = new int[size_my_wins];
+  int *original_x = new int[size_my_wins];
+  for (size_t i = 0; i < size_my_wins; ++i) {
+    getbegyx(my_wins[i], original_y[i], original_x[i]);
   }
 
-  // Update the stacking order.
-  update_panels();
+  // Attach panels
+  for (size_t i = 0; i < size_my_panels; i++) {
+    my_panels[i] = new_panel(my_wins[i]);
+    set_panel_userptr(my_panels[i], 
+      (i + 1 < size_my_panels) ? my_panels[i+1] : my_panels[0]);
+  }
 
-  /* Show it on the screen */
+  update_panels();
   attron(COLOR_PAIR(4));
-  mvprintw(LINES - 2, 0, "Use tab to browse through the windows (F1 to Exit)");
+  mvprintw(LINES - 2, 0, "Use tab/tilde to switch windows | Arrows/j/k to scroll | F1 to exit");
   attroff(COLOR_PAIR(4));
   doupdate();
 
-  top = my_panels[resp_from_api["Subjects"].size() - 1];
+  top = my_panels[size_my_panels - 1];
+  int y_offset = 0;
+
+  // Main loop
   while ((ch = getch()) != KEY_F(1)) {
+    bool needs_update = false;
+    
     switch (ch) {
-    case 9:
-      top = (PANEL *)panel_userptr(top);
-      top_panel(top);
-      break;
+      case KEY_UP:
+      case 'k': // Vim-style up
+        y_offset--;
+        needs_update = true;
+        break;
+
+      case KEY_DOWN:
+      case 'j': // Vim-style down
+        y_offset++;
+        needs_update = true;
+        break;
     }
-    update_panels();
-    doupdate();
+
+    // Update window positions if scrolled
+    if (needs_update) {
+      for (size_t i = 0; i < size_my_panels; ++i) {
+        int new_y = original_y[i] - y_offset;
+        int new_x = original_x[i];
+        move_panel(my_panels[i], new_y, new_x);
+      }
+      
+      update_panels();
+      doupdate();
+    }
   }
+
+  // Cleanup
   endwin();
   delete[] my_wins;
   delete[] my_panels;
+  delete[] original_y;
+  delete[] original_x;
 }
 
 /* Put all the windows */
@@ -143,8 +169,8 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
 
     size_t max_text_length = strlen(label);
     for (int j = 0; j < marks_json["Subjects"][i]["Marks"].size(); j++) {
-      std::string caption = marks_json["Subjects"][i]["Marks"][j]["Caption"];
-      std::string theme = marks_json["Subjects"][i]["Marks"][j]["Theme"];
+      std::string caption = rm_tr_le_whitespace(marks_json["Subjects"][i]["Marks"][j]["Caption"]);
+      std::string theme = rm_tr_le_whitespace(marks_json["Subjects"][i]["Marks"][j]["Theme"]);
       caption = rm_tr_le_whitespace(caption);
       theme = rm_tr_le_whitespace(theme);
       max_text_length =
@@ -211,8 +237,8 @@ void win_show(WINDOW *win, char *label, int label_color, int width, int height,
                     COLOR_PAIR(label_color));
 
     strncpy(ThemeBuf,
-            marks_json["Subjects"][SubjectIndex]["Marks"][i]["Theme"]
-                .get<std::string>()
+            rm_tr_le_whitespace(marks_json["Subjects"][SubjectIndex]["Marks"][i]["Theme"]
+                .get<std::string>())
                 .c_str(),
             sizeof(ThemeBuf));
     print_in_middle(win, 3 + i + 1 + AdditionalOffset, 0, width, ThemeBuf,
