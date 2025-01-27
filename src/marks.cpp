@@ -13,6 +13,7 @@
 #include <panel.h>
 #include <string>
 #include <algorithm>
+#include "net.h"
 
 using nlohmann::json;
 
@@ -56,9 +57,9 @@ void win_show(WINDOW *win, char *label, int label_color, int width, int height,
 
 void marks_page() {
   // DONT FORGET TO UNCOMMENT
-  // json resp_from_api = bakaapi::get_grades();
-  std::ifstream f("test-data/marks3.json");
-  json resp_from_api = json::parse(f);
+  json resp_from_api = bakaapi::get_grades();
+  // std::ifstream f("test-data/marks3.json");
+  // json resp_from_api = json::parse(f);
 
   WINDOW **my_wins;
   size_t size_my_wins = resp_from_api["Subjects"].size();
@@ -104,12 +105,12 @@ void marks_page() {
 
   update_panels();
   attron(COLOR_PAIR(4));
-  mvprintw(LINES - 2, 0, "Use tab/tilde to switch windows | Arrows/j/k to scroll | F1 to exit");
+  mvprintw(LINES - 2, 0, "Arrows/j/k to scroll | F1 to exit");
   attroff(COLOR_PAIR(4));
   doupdate();
 
   top = my_panels[size_my_panels - 1];
-  int y_offset = 0;
+  long y_offset = 0;
 
   // Main loop
   while ((ch = getch()) != KEY_F(1)) {
@@ -232,7 +233,7 @@ void win_show(WINDOW *win, char *label, int label_color, int width, int height,
         marks_json["Subjects"][SubjectIndex]["Marks"][i]["MarkText"]
             .get<std::string>(),
         marks_json["Subjects"][SubjectIndex]["Marks"][i]["Weight"].get<int>()));
-    strncpy(CaptionBuf, Caption.c_str(), sizeof(CaptionBuf));
+    strncpy(CaptionBuf, Caption.c_str(), sizeof(CaptionBuf)-1);
     print_in_middle(win, 3 + i + AdditionalOffset, 0, width, CaptionBuf,
                     COLOR_PAIR(label_color));
 
@@ -240,7 +241,7 @@ void win_show(WINDOW *win, char *label, int label_color, int width, int height,
             rm_tr_le_whitespace(marks_json["Subjects"][SubjectIndex]["Marks"][i]["Theme"]
                 .get<std::string>())
                 .c_str(),
-            sizeof(ThemeBuf));
+            sizeof(ThemeBuf)-1);
     print_in_middle(win, 3 + i + 1 + AdditionalOffset, 0, width, ThemeBuf,
                     COLOR_PAIR(label_color));
     AdditionalOffset++;

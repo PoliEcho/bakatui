@@ -25,8 +25,8 @@ int main(int argc, char **argv) {
   // error signal handlers
   signal(SIGSEGV, safe_exit);
 
-  marks_page();
-  /*
+  // marks_page();
+  
 
   {
     std::string savedir_path = std::getenv("HOME");
@@ -64,6 +64,6 @@ int main(int argc, char **argv) {
     get_input_and_login();
   }
   main_menu();
-  */
+  
   return 0;
 }

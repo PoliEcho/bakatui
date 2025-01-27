@@ -2,6 +2,7 @@
 #include "color.h"
 #include "helper_funcs.h"
 #include "main.h"
+#include <cerrno>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
@@ -18,6 +19,10 @@
 
 using nlohmann::json;
 
+// metods
+#define GET 0
+#define POST 1
+
 CURL *curl = curl_easy_init();
 
 // Callback function to write data into a std::string
@@ -29,7 +34,7 @@ size_t WriteCallback(void *contents, size_t size, size_t nmemb,
 }
 
 std::tuple<std::string, int> send_curl_request(std::string endpoint,
-                                               std::string type,
+                                               uint8_t type,
                                                std::string req_data) {
   std::string response;
   std::string url = baka_api_url + endpoint;
@@ -50,8 +55,16 @@ std::tuple<std::string, int> send_curl_request(std::string endpoint,
         headers, "Content-Type: application/x-www-form-urlencoded");
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
-    if (type == "POST") {
-      curl_easy_setopt(curl, CURLOPT_POST, 1L);
+    switch (type) {
+      case GET:
+        curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
+        break;
+      case POST:
+        curl_easy_setopt(curl, CURLOPT_POST, 1L);
+        break;
+      default:
+        std::cerr << RED "[ERROR] " << RESET "invalid metod\n";
+        safe_exit(EINVAL);
     }
 
   } else {
@@ -77,7 +90,7 @@ void login(std::string username, std::string password) {
       std::format("client_id=ANDR&grant_type=password&username={}&password={}",
                   username, password);
 
-  auto [response, http_code] = send_curl_request("api/login", "POST", req_data);
+  auto [response, http_code] = send_curl_request("api/login", POST, req_data);
   if (http_code != 200) {
     std::cerr << RED "[ERROR] " << RESET << "login failed " << http_code
               << " is non 200 response\n";
@@ -116,7 +129,7 @@ void refresh_access_token() {
                   "token&refresh_token={}",
                   refresh_token);
 
-  auto [response, http_code] = send_curl_request("api/login", "POST", req_data);
+  auto [response, http_code] = send_curl_request("api/login", POST, req_data);
   if (http_code != 200) {
     std::cerr << RED "[ERROR] " << RESET << http_code
               << "is non 200 response\n";
@@ -139,7 +152,7 @@ json get_grades() {
       std::format("Authorization=Bearer&access_token={}",
                   access_token);
 
-    auto [response, http_code] = send_curl_request("api/3/marks", "GET", req_data);
+    auto [response, http_code] = send_curl_request("api/3/marks", GET, req_data);
 
     if(http_code != 200) {
       refresh_access_token();

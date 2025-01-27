@@ -8,6 +8,7 @@
 #include <string>
 #include <termios.h>
 #include <unistd.h>
+#include "color.h"
 
 void safe_exit(int code) {
   switch (code) {
@@ -26,7 +27,7 @@ void safe_exit(int code) {
 
   case SIGSEGV:
     std::cerr << "\nreceived SIGSEGV(segmentaiton fault) exiting...\nIf this "
-                 "repeats please report it as bug\n";
+                 "repeats please report it as a bug\n";
     break;
 
   default:
@@ -68,10 +69,16 @@ std::string SoRAuthFile(bool save, std::string data) {
     return "";
   } else {
     std::ifstream authfile(authfile_path);
-    authfile >> data;
-    authfile.close();
+    if (authfile.is_open()) {
+        data.assign((std::istreambuf_iterator<char>(authfile)), 
+                    std::istreambuf_iterator<char>());
+        authfile.close();
+    } else {
+        std::cerr << RED "[ERROR] " << RESET << "Failed to open auth file\n";
+        safe_exit(-2);
+    }
     return data;
-  }
+}
 }
 
 void get_input_and_login() {
@@ -80,10 +87,10 @@ void get_input_and_login() {
   std::cin >> username;
   std::string password;
 
-  password = getpass("enter password: ");
+  // password = getpass("enter password: ");
   // DEBUG
-  // std::cout << "\nenter password: ";
-  // std::cin >> password;
+  std::cout << "\nenter password: ";
+  std::cin >> password;
 
   bakaapi::login(username, password);
 }

@@ -6,12 +6,17 @@
 #include <curses.h>
 #include <menu.h>
 
+#include "marks.h"
+
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 #define CTRLD 4
 
 char *choices[] = {
-    "login",    "Grades",  "shedule", "Komens",
+    "login",    "Marks",  "shedule", "Komens",
     "Homework", "Absence", "Exit",    (char *)NULL,
+};
+void (*choicesFuncs[])() = {
+  NULL, marks_page, NULL, NULL, NULL, NULL, NULL, NULL
 };
 
 void main_menu() {
@@ -85,10 +90,7 @@ void main_menu() {
       menu_driver(my_menu, REQ_UP_ITEM);
       break;
     case 10: // ENTER
-      move(20, 0);
-      clrtoeol();
-      mvprintw(20, 0, "Item selected is : %s",
-               item_name(current_item(my_menu)));
+      choicesFuncs[item_index(current_item(my_menu))]();
       pos_menu_cursor(my_menu);
       break;
     }
