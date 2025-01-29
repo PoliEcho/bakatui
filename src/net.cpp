@@ -20,8 +20,12 @@
 using nlohmann::json;
 
 // metods
-#define GET 0
-#define POST 1
+enum {
+  GET,
+  POST,
+};
+
+std::string access_token;
 
 CURL *curl = curl_easy_init();
 
@@ -76,13 +80,11 @@ std::tuple<std::string, int> send_curl_request(std::string endpoint,
   int http_code = 0;
   curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
 
-  curl_easy_cleanup(curl); // Cleanup
+  
 
   return {response, http_code};
 }
 namespace bakaapi {
-
-std::string access_token;
 
 void login(std::string username, std::string password) {
 
@@ -119,6 +121,8 @@ void login(std::string username, std::string password) {
 }
 
 void refresh_access_token() {
+  // DEBUG
+  std::clog << "refreshing access token please wait...\n";
 
   json authfile_parsed = json::parse(SoRAuthFile(false, ""));
 
@@ -129,6 +133,8 @@ void refresh_access_token() {
                   "token&refresh_token={}",
                   refresh_token);
 
+  // DEBUG
+  std::clog << "calling send_curl_request() with folowing req_data\n" << req_data << std::endl; 
   auto [response, http_code] = send_curl_request("api/login", POST, req_data);
   if (http_code != 200) {
     std::cerr << RED "[ERROR] " << RESET << http_code
@@ -155,6 +161,8 @@ json get_grades() {
     auto [response, http_code] = send_curl_request("api/3/marks", GET, req_data);
 
     if(http_code != 200) {
+      // DEBUG
+      std::clog << "Failed geting marks code: " << http_code << "\nrequest: " << req_data <<"\nresponse: " << response << std::endl;
       refresh_access_token();
     }
 

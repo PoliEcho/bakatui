@@ -44,41 +44,45 @@ std::string bool_to_string(bool bool_in) { return bool_in ? "true" : "false"; }
 
 std::string SoRAuthFile(bool save, std::string data) {
 
-  std::string savedir_path = std::getenv("HOME");
-  savedir_path.append("/.local/share/bakatui");
+    std::string home = std::getenv("HOME");
+    if (home.empty()) {
+        std::cerr << RED "[ERROR] " RESET << "HOME environment variable not set.\n";
+        safe_exit(EXIT_FAILURE);
+    }
 
-  DIR *savedir = opendir(savedir_path.c_str());
-  if (savedir) {
-    /* Directory exists. */
-    closedir(savedir);
-  } else if (ENOENT == errno) {
-    /* Directory does not exist. */
-    std::filesystem::create_directories(savedir_path);
-  } else {
-    /* opendir() failed for some other reason. */
-    std::cerr << "cannot access ~/.local/share/bakatui\n";
-    safe_exit(100);
-  }
+    std::string savedir_path = home;
+    savedir_path.append("/.local/share/bakatui");
 
-  std::string authfile_path = std::string(savedir_path) + "/auth";
 
-  if (save) {
-    std::ofstream authfile(authfile_path);
-    authfile << data;
-    authfile.close();
-    return "";
-  } else {
-    std::ifstream authfile(authfile_path);
-    if (authfile.is_open()) {
+    if (!std::filesystem::exists(savedir_path)) {
+        if (!std::filesystem::create_directories(savedir_path)) {
+            std::cerr << RED "[ERROR] " RESET << "Failed to create directory: " << savedir_path << "\n";
+            safe_exit(EXIT_FAILURE);
+        }
+    }
+
+    std::string authfile_path = savedir_path + "/auth";
+
+    if (save) {
+        std::ofstream authfile(authfile_path);
+        if (!authfile.is_open()) {
+            std::cerr << RED "[ERROR] " RESET << "Failed to open auth file for writing.\n";
+            safe_exit(EXIT_FAILURE);
+        }
+        authfile << data;
+        authfile.close();
+        return "";
+    } else {
+        std::ifstream authfile(authfile_path);
+        if (!authfile.is_open()) {
+            std::cerr << RED "[ERROR] " RESET << "Failed to open auth file for reading.\n";
+            safe_exit(EXIT_FAILURE);
+        }
         data.assign((std::istreambuf_iterator<char>(authfile)), 
                     std::istreambuf_iterator<char>());
         authfile.close();
-    } else {
-        std::cerr << RED "[ERROR] " << RESET << "Failed to open auth file\n";
-        safe_exit(-2);
+        return data;
     }
-    return data;
-}
 }
 
 void get_input_and_login() {

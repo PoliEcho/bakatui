@@ -90,6 +90,7 @@ void main_menu() {
       menu_driver(my_menu, REQ_UP_ITEM);
       break;
     case 10: // ENTER
+    endwin();
       choicesFuncs[item_index(current_item(my_menu))]();
       pos_menu_cursor(my_menu);
       break;
