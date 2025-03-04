@@ -91,10 +91,10 @@ void get_input_and_login() {
   std::cin >> username;
   std::string password;
 
-  // password = getpass("enter password: ");
+  password = getpass("enter password: ");
   // DEBUG
-  std::cout << "\nenter password: ";
-  std::cin >> password;
+  // std::cout << "\nenter password: ";
+  // std::cin >> password;
 
   bakaapi::login(username, password);
 }
