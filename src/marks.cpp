@@ -106,7 +106,7 @@ void marks_page() {
 
   update_panels();
   attron(COLOR_PAIR(4));
-  mvprintw(LINES - 2, 0, "Arrows/j/k to scroll | F1 to exit");
+  mvprintw(LINES - 2, 0, "Arrows/j/k to scroll | F1 to exit | {mark} [weight]");
   attroff(COLOR_PAIR(4));
   doupdate();
 
@@ -233,7 +233,10 @@ void win_show(WINDOW *win, char *label, int label_color, int width, int height,
        i++) {
     Caption = marks_json["Subjects"][SubjectIndex]["Marks"][i]["Caption"];
     Caption = rm_tr_le_whitespace(Caption);
-	  Caption.append(std::format(" - {{{}}} [{}]",marks_json["Subjects"][SubjectIndex]["Marks"][i]["MarkText"].get<std::string>(),marks_json["Subjects"][SubjectIndex]["Marks"][i]["Weight"].get<int>()));
+	  Caption.append(std::format(" - {{{}}} [{}]",
+      marks_json["Subjects"][SubjectIndex]["Marks"][i]["MarkText"]
+      .get<std::string>(),marks_json["Subjects"][SubjectIndex]["Marks"][i]["Weight"].get<int>()));
+      
     strncpy(CaptionBuf, Caption.c_str(), sizeof(CaptionBuf)-1);
     print_in_middle(win, 3 + i + AdditionalOffset, 0, width, CaptionBuf,COLOR_PAIR(label_color));
 
