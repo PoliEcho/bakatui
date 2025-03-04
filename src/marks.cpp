@@ -14,6 +14,7 @@
 #include <string>
 #include <algorithm>
 #include "net.h"
+#include "color.h"
 
 using nlohmann::json;
 
@@ -145,6 +146,7 @@ void marks_page() {
 
   // Cleanup
   endwin();
+  clear();
   delete[] my_wins;
   delete[] my_panels;
   delete[] original_y;
@@ -161,10 +163,13 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
   uint8_t curent_color = 0;
 
   int MaxHight = 0;
+  // this loop true subjects
   for (i = 0; i < n; ++i) {
 
     // Calculate label and max_text_length to determine window width
     std::string sub_name = marks_json["Subjects"][i]["Subject"]["Name"];
+    // DEBUG
+    // std::clog << BLUE"[LOG]" << RESET" procesing subject: " << sub_name << "\n";
     std::string sub_avg_s = marks_json["Subjects"][i]["AverageText"];
     sprintf(label, "%s - avg: %s", sub_name.c_str(), sub_avg_s.c_str());
 
@@ -228,14 +233,9 @@ void win_show(WINDOW *win, char *label, int label_color, int width, int height,
        i++) {
     Caption = marks_json["Subjects"][SubjectIndex]["Marks"][i]["Caption"];
     Caption = rm_tr_le_whitespace(Caption);
-    Caption.append(std::format(
-        " - {{{}}} [{}]",
-        marks_json["Subjects"][SubjectIndex]["Marks"][i]["MarkText"]
-            .get<std::string>(),
-        marks_json["Subjects"][SubjectIndex]["Marks"][i]["Weight"].get<int>()));
+	  Caption.append(std::format(" - {{{}}} [{}]",marks_json["Subjects"][SubjectIndex]["Marks"][i]["MarkText"].get<std::string>(),marks_json["Subjects"][SubjectIndex]["Marks"][i]["Weight"].get<int>()));
     strncpy(CaptionBuf, Caption.c_str(), sizeof(CaptionBuf)-1);
-    print_in_middle(win, 3 + i + AdditionalOffset, 0, width, CaptionBuf,
-                    COLOR_PAIR(label_color));
+    print_in_middle(win, 3 + i + AdditionalOffset, 0, width, CaptionBuf,COLOR_PAIR(label_color));
 
     strncpy(ThemeBuf,
             rm_tr_le_whitespace(marks_json["Subjects"][SubjectIndex]["Marks"][i]["Theme"]

@@ -16,7 +16,7 @@ char *choices[] = {
     "Homework", "Absence", "Exit",    (char *)NULL,
 };
 void (*choicesFuncs[])() = {
-  NULL, marks_page, NULL, NULL, NULL, NULL, NULL, NULL
+  nullptr, marks_page, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr
 };
 
 void main_menu() {
@@ -90,9 +90,11 @@ void main_menu() {
       menu_driver(my_menu, REQ_UP_ITEM);
       break;
     case 10: // ENTER
-    endwin();
+    clear();
       choicesFuncs[item_index(current_item(my_menu))]();
       pos_menu_cursor(my_menu);
+      refresh();
+      wrefresh(my_menu_win);
       break;
     }
     wrefresh(my_menu_win);

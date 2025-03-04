@@ -16,6 +16,7 @@
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <string>
+#include "const.h"
 
 using nlohmann::json;
 
@@ -42,8 +43,13 @@ std::tuple<std::string, int> send_curl_request(std::string endpoint,
                                                std::string req_data) {
   std::string response;
   std::string url = baka_api_url + endpoint;
+  if (type == GET) {
+    url.append("?" + req_data);
+  }
 
   if (curl) {
+    // DEBUG
+    // std::clog << BLUE"[LOG]" << RESET" sending to endpoint: " << url << "\n";
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
@@ -52,11 +58,11 @@ std::tuple<std::string, int> send_curl_request(std::string endpoint,
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, req_data.c_str());
-
+    
     struct curl_slist *headers = NULL;
-    headers = curl_slist_append(
-        headers, "Content-Type: application/x-www-form-urlencoded");
+    headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
+    headers = curl_slist_append(headers, std::format("User-Agent: bakatui/{}", VERSION).c_str());
+
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
     switch (type) {
@@ -64,6 +70,7 @@ std::tuple<std::string, int> send_curl_request(std::string endpoint,
         curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
         break;
       case POST:
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, req_data.c_str());
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
         break;
       default:
