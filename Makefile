@@ -1,8 +1,8 @@
 # Compiler and flags
 CPPC = g++
-CPPC_FLAGS = -std=c++23 -s -O3 -lncurses -lcurl -lmenu -lpanel -Wall -Wextra -Wno-write-strings
+CPPC_FLAGS = -std=c++23 -s -O3 -lncursesw -lcurl -lmenu -lpanel -Wall -Wextra -Wno-write-strings
 # Debug flags:
-# CPPC_FLAGS = -ggdb -std=c++23 -lncurses -lcurl -lmenu -lpanel -Wall -Wextra
+# CPPC_FLAGS = -ggdb -std=c++23 -lncursesw -lcurl -lmenu -lpanel -Wall -Wextra -Wno-write-strings
 
 
 SRC_PATH := src
