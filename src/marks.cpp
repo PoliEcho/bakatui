@@ -6,7 +6,6 @@
 #include <cstring>
 #include <curses.h>
 #include <format>
-#include <fstream>
 #include <iostream>
 #include <menu.h>
 #include <nlohmann/json.hpp>
@@ -14,7 +13,6 @@
 #include <string>
 #include <algorithm>
 #include "net.h"
-#include "color.h"
 
 using nlohmann::json;
 
