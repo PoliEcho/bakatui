@@ -1,5 +1,6 @@
 #include "helper_funcs.h"
 #include "net.h"
+#include "timetable.h"
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
@@ -12,12 +13,11 @@
 #define CTRLD 4
 
 char *choices[] = {
-    "login",    "Marks",  "timetable", "Komens",
-    "Homework", "Absence", "Exit",    (char *)NULL,
+    "login",    "Marks",   "timetable", "Komens",
+    "Homework", "Absence", "Exit",      (char *)NULL,
 };
-void (*choicesFuncs[])() = {
-  nullptr, marks_page, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr
-};
+void (*choicesFuncs[])() = {nullptr, marks_page, timetable_page, nullptr,
+                            nullptr, nullptr,    nullptr,        nullptr};
 
 void main_menu() {
   ITEM **my_items;
@@ -90,7 +90,7 @@ void main_menu() {
       menu_driver(my_menu, REQ_UP_ITEM);
       break;
     case 10: // ENTER
-    clear();
+      clear();
       choicesFuncs[item_index(current_item(my_menu))]();
       pos_menu_cursor(my_menu);
       refresh();
