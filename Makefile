@@ -35,4 +35,4 @@ $(OBJ_PATH)/%.o: $(SRC_PATH)/%.cpp
 clean:
 	rm -fr build
 
-.PHONY: all clean make-build-dir
+.PHONY: all clean install
