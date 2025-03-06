@@ -1,5 +1,6 @@
 #include "net.h"
 #include "color.h"
+#include "const.h"
 #include "helper_funcs.h"
 #include "main.h"
 #include <cerrno>
@@ -16,7 +17,6 @@
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <string>
-#include "const.h"
 
 using nlohmann::json;
 
@@ -38,9 +38,8 @@ size_t WriteCallback(void *contents, size_t size, size_t nmemb,
   return totalSize;
 }
 
-std::tuple<std::string, int> send_curl_request(std::string endpoint,
-                                               uint8_t type,
-                                               std::string req_data) {
+std::tuple<std::string, int>
+send_curl_request(std::string endpoint, uint8_t type, std::string req_data) {
   std::string response;
   std::string url = baka_api_url + endpoint;
   if (type == GET) {
@@ -54,28 +53,32 @@ std::tuple<std::string, int> send_curl_request(std::string endpoint,
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
 
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    if (config.ignoressl) {
+      curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+      curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    }
+
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
-    
     struct curl_slist *headers = NULL;
-    headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
-    headers = curl_slist_append(headers, std::format("User-Agent: bakatui/{}", VERSION).c_str());
+    headers = curl_slist_append(
+        headers, "Content-Type: application/x-www-form-urlencoded");
+    headers = curl_slist_append(
+        headers, std::format("User-Agent: bakatui/{}", VERSION).c_str());
 
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
     switch (type) {
-      case GET:
-        curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
-        break;
-      case POST:
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, req_data.c_str());
-        curl_easy_setopt(curl, CURLOPT_POST, 1L);
-        break;
-      default:
-        std::cerr << RED "[ERROR] " << RESET "invalid metod\n";
-        safe_exit(EINVAL);
+    case GET:
+      curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
+      break;
+    case POST:
+      curl_easy_setopt(curl, CURLOPT_POSTFIELDS, req_data.c_str());
+      curl_easy_setopt(curl, CURLOPT_POST, 1L);
+      break;
+    default:
+      std::cerr << RED "[ERROR] " << RESET "invalid metod\n";
+      safe_exit(EINVAL);
     }
 
   } else {
@@ -86,8 +89,6 @@ std::tuple<std::string, int> send_curl_request(std::string endpoint,
 
   int http_code = 0;
   curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-
-  
 
   return {response, http_code};
 }
@@ -111,7 +112,7 @@ void login(std::string username, std::string password) {
   {
     std::string savedir_path = std::getenv("HOME");
     savedir_path.append("/.local/share/bakatui");
-  
+
     std::string urlfile_path = std::string(savedir_path) + "/url";
     std::ofstream urlfile;
     urlfile.open(urlfile_path);
@@ -141,7 +142,8 @@ void refresh_access_token() {
                   refresh_token);
 
   // DEBUG
-  std::clog << "calling send_curl_request() with folowing req_data\n" << req_data << std::endl; 
+  std::clog << "calling send_curl_request() with folowing req_data\n"
+            << req_data << std::endl;
   auto [response, http_code] = send_curl_request("api/login", POST, req_data);
   if (http_code != 200) {
     std::cerr << RED "[ERROR] " << RESET << http_code
@@ -156,27 +158,28 @@ void refresh_access_token() {
   access_token = resp_parsed["access_token"];
 }
 void is_access_token_empty() {
-  if(access_token.empty()) {
+  if (access_token.empty()) {
     json authfile_parsed = json::parse(SoRAuthFile(false, ""));
     access_token = authfile_parsed["access_token"];
   }
-} 
+}
 
 // supports all endpoints that only require access_token
 json get_data_from_endpoint(std::string endpoint) {
-      is_access_token_empty();
-      std::string req_data =
-      std::format("Authorization=Bearer&access_token={}",
-                  access_token);
+  is_access_token_empty();
+  std::string req_data =
+      std::format("Authorization=Bearer&access_token={}", access_token);
 
-    auto [response, http_code] = send_curl_request(endpoint, GET, req_data);
+  auto [response, http_code] = send_curl_request(endpoint, GET, req_data);
 
-    if(http_code != 200) {
-      // DEBUG
-      std::clog << "Failed geting data from endpoint: " << endpoint << " code: " << http_code << "\nrequest: " << req_data <<"\nresponse: " << response << std::endl;
-      refresh_access_token();
-    }
+  if (http_code != 200) {
+    // DEBUG
+    std::clog << "Failed geting data from endpoint: " << endpoint
+              << " code: " << http_code << "\nrequest: " << req_data
+              << "\nresponse: " << response << std::endl;
+    refresh_access_token();
+  }
 
-    return json::parse(response);
+  return json::parse(response);
 }
 } // namespace bakaapi
