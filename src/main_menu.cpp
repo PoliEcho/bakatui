@@ -5,16 +5,18 @@
 #include <cstdlib>
 #include <cstring>
 #include <curses.h>
+#include <locale>
 #include <menu.h>
+#include <string>
 
 #include "marks.h"
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 #define CTRLD 4
 
-char *choices[] = {
-    "login",    "Marks",   "timetable", "Komens",
-    "Homework", "Absence", "Exit",      (char *)NULL,
+wchar_t *choices[] = {
+    L"login",    L"Marks",   L"timetable", L"Komens",
+    L"Homework", L"Absence", L"Exit",      (wchar_t *)NULL,
 };
 void (*choicesFuncs[])() = {nullptr, marks_page, timetable_page, nullptr,
                             nullptr, nullptr,    nullptr,        nullptr};
@@ -27,6 +29,7 @@ void main_menu() {
   int n_choices, i;
 
   /* Initialize curses */
+  setlocale(LC_ALL, "");
   initscr();
   start_color();
   cbreak();
@@ -39,7 +42,8 @@ void main_menu() {
   n_choices = ARRAY_SIZE(choices);
   my_items = (ITEM **)calloc(n_choices, sizeof(ITEM *));
   for (i = 0; i < n_choices; ++i)
-    my_items[i] = new_item(choices[i], choices[i]);
+    my_items[i] =
+        new_item(wchar_to_char(choices[i]), wchar_to_char(choices[i]));
 
   /* Crate menu */
   my_menu = new_menu((ITEM **)my_items);
@@ -59,7 +63,7 @@ void main_menu() {
   /* Print a border around the main window and print a title */
   box(my_menu_win, 0, 0);
 
-  print_in_middle(my_menu_win, 1, 0, 40, "Main Menu", COLOR_PAIR(1));
+  wprint_in_middle(my_menu_win, 1, 0, 40, L"Main Menu", COLOR_PAIR(1));
   mvwaddch(my_menu_win, 2, 0, ACS_LTEE);
   mvwhline(my_menu_win, 2, 1, ACS_HLINE, 38);
   mvwaddch(my_menu_win, 2, 39, ACS_RTEE);

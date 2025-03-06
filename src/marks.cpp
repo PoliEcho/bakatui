@@ -1,5 +1,7 @@
 #include "marks.h"
 #include "helper_funcs.h"
+#include "net.h"
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -7,40 +9,17 @@
 #include <curses.h>
 #include <format>
 #include <iostream>
+#include <locale>
 #include <menu.h>
 #include <nlohmann/json.hpp>
 #include <panel.h>
 #include <string>
-#include <algorithm>
-#include "net.h"
 
 using nlohmann::json;
 
-// Thsi code is based on
+// This code is based on
 // https://github.com/tony/NCURSES-Programming-HOWTO-examples/blob/master/16-panels
-/*
-The MIT License (MIT)
-
-Copyright (c) 2016 Tony Narlock
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-*/
+// MIT License (see original file)
 
 #define NLINES 10
 #define NCOLS 40
@@ -51,8 +30,8 @@ SOFTWARE.
 #define DEFAULT_PADDING 4
 
 void init_wins(WINDOW **wins, int n, json marks_json);
-void win_show(WINDOW *win, char *label, int label_color, int width, int height,
-              json marks_json, int SubjectIndex);
+void win_show(WINDOW *win, wchar_t *label, int label_color, int width,
+              int height, json marks_json, int SubjectIndex);
 
 void marks_page() {
   // DONT FORGET TO UNCOMMENT
@@ -98,8 +77,8 @@ void marks_page() {
   // Attach panels
   for (size_t i = 0; i < size_my_panels; i++) {
     my_panels[i] = new_panel(my_wins[i]);
-    set_panel_userptr(my_panels[i], 
-      (i + 1 < size_my_panels) ? my_panels[i+1] : my_panels[0]);
+    set_panel_userptr(my_panels[i], (i + 1 < size_my_panels) ? my_panels[i + 1]
+                                                             : my_panels[0]);
   }
 
   update_panels();
@@ -114,19 +93,19 @@ void marks_page() {
   // Main loop
   while ((ch = getch()) != KEY_F(1)) {
     bool needs_update = false;
-    
-    switch (ch) {
-      case KEY_UP:
-      case 'k': // Vim-style up
-        y_offset--;
-        needs_update = true;
-        break;
 
-      case KEY_DOWN:
-      case 'j': // Vim-style down
-        y_offset++;
-        needs_update = true;
-        break;
+    switch (ch) {
+    case KEY_UP:
+    case 'k': // Vim-style up
+      y_offset--;
+      needs_update = true;
+      break;
+
+    case KEY_DOWN:
+    case 'j': // Vim-style down
+      y_offset++;
+      needs_update = true;
+      break;
     }
 
     // Update window positions if scrolled
@@ -136,7 +115,7 @@ void marks_page() {
         int new_x = original_x[i];
         move_panel(my_panels[i], new_y, new_x);
       }
-      
+
       update_panels();
       doupdate();
     }
@@ -154,36 +133,48 @@ void marks_page() {
 /* Put all the windows */
 void init_wins(WINDOW **wins, int n, json marks_json) {
   int x, y, i;
-  char label[1500];
+  wchar_t label[1500];
 
   y = DEFAULT_Y_OFFSET;
   x = DEFAULT_X_OFFSET;
   uint8_t curent_color = 0;
 
   int MaxHight = 0;
-  // this loop true subjects
+  // this loop through subjects
   for (i = 0; i < n; ++i) {
 
     // Calculate label and max_text_length to determine window width
     std::string sub_name = marks_json["Subjects"][i]["Subject"]["Name"];
-    // DEBUG
-    // std::clog << BLUE"[LOG]" << RESET" procesing subject: " << sub_name << "\n";
     std::string sub_avg_s = marks_json["Subjects"][i]["AverageText"];
-    sprintf(label, "%s - avg: %s", sub_name.c_str(), sub_avg_s.c_str());
 
-    size_t max_text_length = strlen(label);
+    // Convert to wchar_t
+    std::wstring wsub_name = string_to_wstring(sub_name);
+    std::wstring wsub_avg_s = string_to_wstring(sub_avg_s);
+
+    // Using swprintf for wide character formatting
+    swprintf(label, sizeof(label) / sizeof(label[0]), L"%ls - avg: %ls",
+             wsub_name.c_str(), wsub_avg_s.c_str());
+
+    size_t max_text_length = wcslen(label);
     for (int j = 0; j < marks_json["Subjects"][i]["Marks"].size(); j++) {
-      std::string caption = rm_tr_le_whitespace(marks_json["Subjects"][i]["Marks"][j]["Caption"]);
-      std::string theme = rm_tr_le_whitespace(marks_json["Subjects"][i]["Marks"][j]["Theme"]);
-      caption = rm_tr_le_whitespace(caption);
-      theme = rm_tr_le_whitespace(theme);
+      std::string caption =
+          rm_tr_le_whitespace(marks_json["Subjects"][i]["Marks"][j]["Caption"]);
+      std::string theme =
+          rm_tr_le_whitespace(marks_json["Subjects"][i]["Marks"][j]["Theme"]);
+
+      std::wstring wcaption = string_to_wstring(caption);
+      std::wstring wtheme = string_to_wstring(theme);
+
+      // Some code that does something and fixes some edge cases
+      std::string testCaption = caption + std::format(" {{{}}} [{}]", "X", 0);
+      std::wstring wTestCaption = string_to_wstring(testCaption);
       max_text_length =
-          std::max({max_text_length, caption.length(), theme.length()});
+          std::max({max_text_length, wTestCaption.length(), wtheme.length()});
     }
 
     int width = max_text_length + DEFAULT_PADDING;
 
-    // hanndle windows overflowing off screen
+    // handle windows overflowing off screen
     if (x + width > COLS) {
       x = DEFAULT_X_OFFSET;
       y += MaxHight + 2;
@@ -207,8 +198,8 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
 }
 
 /* Show the window with a border and a label */
-void win_show(WINDOW *win, char *label, int label_color, int width, int height,
-              json marks_json, int SubjectIndex) {
+void win_show(WINDOW *win, wchar_t *label, int label_color, int width,
+              int height, json marks_json, int SubjectIndex) {
   int startx, starty;
 
   wresize(win, height, width);
@@ -221,30 +212,49 @@ void win_show(WINDOW *win, char *label, int label_color, int width, int height,
   mvwhline(win, 2, 1, ACS_HLINE, width - 2);
   mvwaddch(win, 2, width - 1, ACS_RTEE);
 
-  print_in_middle(win, 1, 0, width, label, COLOR_PAIR(label_color));
+  wprint_in_middle(win, 1, 0, width, label, COLOR_PAIR(label_color));
 
-  char CaptionBuf[1500];
-  char ThemeBuf[1500];
-  std::string Caption;
+  wchar_t CaptionBuf[1500];
+  wchar_t ThemeBuf[1500];
+  std::wstring wCaption;
   int AdditionalOffset = 0;
+
   for (size_t i = 0; i < marks_json["Subjects"][SubjectIndex]["Marks"].size();
        i++) {
-    Caption = marks_json["Subjects"][SubjectIndex]["Marks"][i]["Caption"];
+    std::string Caption =
+        marks_json["Subjects"][SubjectIndex]["Marks"][i]["Caption"];
     Caption = rm_tr_le_whitespace(Caption);
-	  Caption.append(std::format(" - {{{}}} [{}]",
-      marks_json["Subjects"][SubjectIndex]["Marks"][i]["MarkText"]
-      .get<std::string>(),marks_json["Subjects"][SubjectIndex]["Marks"][i]["Weight"].get<int>()));
-      
-    strncpy(CaptionBuf, Caption.c_str(), sizeof(CaptionBuf)-1);
-    print_in_middle(win, 3 + i + AdditionalOffset, 0, width, CaptionBuf,COLOR_PAIR(label_color));
 
-    strncpy(ThemeBuf,
-            rm_tr_le_whitespace(marks_json["Subjects"][SubjectIndex]["Marks"][i]["Theme"]
-                .get<std::string>())
-                .c_str(),
-            sizeof(ThemeBuf)-1);
-    print_in_middle(win, 3 + i + 1 + AdditionalOffset, 0, width, ThemeBuf,
-                    COLOR_PAIR(label_color));
+    std::string MarkText =
+        marks_json["Subjects"][SubjectIndex]["Marks"][i]["MarkText"];
+    int Weight = marks_json["Subjects"][SubjectIndex]["Marks"][i]["Weight"];
+
+    // Create formatted string with mark and weight
+    std::string formattedCaption =
+        Caption + std::format(" - {{{}}} [{}]", MarkText, Weight);
+
+    // Convert to wide string
+    wCaption = string_to_wstring(formattedCaption);
+
+    wcsncpy(CaptionBuf, wCaption.c_str(),
+            sizeof(CaptionBuf) / sizeof(CaptionBuf[0]) - 1);
+    CaptionBuf[sizeof(CaptionBuf) / sizeof(CaptionBuf[0]) - 1] =
+        L'\0'; // Ensure null termination
+
+    wprint_in_middle(win, 3 + i + AdditionalOffset, 0, width, CaptionBuf,
+                     COLOR_PAIR(label_color));
+
+    std::string Theme =
+        marks_json["Subjects"][SubjectIndex]["Marks"][i]["Theme"];
+    std::wstring wTheme = string_to_wstring(rm_tr_le_whitespace(Theme));
+
+    wcsncpy(ThemeBuf, wTheme.c_str(),
+            sizeof(ThemeBuf) / sizeof(ThemeBuf[0]) - 1);
+    ThemeBuf[sizeof(ThemeBuf) / sizeof(ThemeBuf[0]) - 1] =
+        L'\0'; // Ensure null termination
+
+    wprint_in_middle(win, 3 + i + 1 + AdditionalOffset, 0, width, ThemeBuf,
+                     COLOR_PAIR(label_color));
     AdditionalOffset++;
   }
 }

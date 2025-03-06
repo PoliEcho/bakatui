@@ -4,6 +4,7 @@
 #include <format>
 #include <fstream>
 #include <iostream>
+#include <locale>
 #include <ncurses.h>
 #include <nlohmann/json.hpp>
 
@@ -39,5 +40,10 @@ void timetable_page() {
   noecho();
   keypad(stdscr, TRUE);
 
-  printw("LINES: %d COLS: %d", LINES, COLS);
+  // Use wide character printing
+  std::wstring msg = std::format(L"LINES: {} COLS: {}", LINES, COLS);
+  mvaddwstr(0, 0, msg.c_str());
+  refresh();
+  getch(); // Wait for key press
+  endwin();
 }
