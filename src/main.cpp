@@ -2,7 +2,6 @@
 #include "color.h"
 #include "helper_funcs.h"
 #include "main_menu.h"
-#include "marks.h"
 #include "net.h"
 #include <csignal>
 #include <cstdlib>
@@ -13,17 +12,12 @@
 #include <regex>
 #include <string>
 #include <unistd.h>
-#include "const.h"
+#include "flags.h"
+#include "types.h"
 
 std::string baka_api_url;
 
-void PrintHelp() {
-  std::cout << "Usage: " << NAME << " [OPTIONS]" << "\n"
-  << "-h        Show this help menu\n"
-  << "-v        Show version\n"
-  << "-L        Force new login\n";
-  safe_exit(0);
-}
+Config config;
 
 int main(int argc, char **argv) {
   // signal handlers
@@ -36,18 +30,22 @@ int main(int argc, char **argv) {
   signal(SIGSEGV, safe_exit);
 
   {
-    int opt;
-    while ((opt = getopt(argc, argv, "vf:")) != -1) {  // "f:" expects a value
-        switch (opt) {
-            case 'h': PrintHelp(); break;
-            case 'L': break;
-            case 'v': break;
-            default:  /* handle error */;
-        }
-    }
 
     std::string savedir_path = std::getenv("HOME");
     savedir_path.append("/.local/share/bakatui");
+
+    int opt;
+    while ((opt = getopt(argc, argv, "hVvLS:")) != -1) {
+        switch (opt) {
+            case 'h': PrintHelp(); break;
+            case 'V': PrintVersion(); break;
+            case 'v': config.verbose = true; break;
+            case 'L': DeleteLogin(savedir_path); break;
+            case 'S': config.ignoressl = true; break;
+            default: std::cerr << RED"[ERROR]" << RESET" invalid option: " << (char)optopt << "\ntry: -h\n"; safe_exit(EINVAL);
+        }
+    }
+
     std::string urlfile_path = std::string(savedir_path) + "/url";
     std::ifstream urlfile;
     urlfile.open(urlfile_path);
