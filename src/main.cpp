@@ -5,6 +5,7 @@
 #include "marks.h"
 #include "net.h"
 #include <csignal>
+#include <cstdlib>
 #include <curl/curl.h>
 #include <curses.h>
 #include <fstream>
@@ -12,8 +13,17 @@
 #include <regex>
 #include <string>
 #include <unistd.h>
+#include "const.h"
 
 std::string baka_api_url;
+
+void PrintHelp() {
+  std::cout << "Usage: " << NAME << " [OPTIONS]" << "\n"
+  << "-h        Show this help menu\n"
+  << "-v        Show version\n"
+  << "-L        Force new login\n";
+  safe_exit(0);
+}
 
 int main(int argc, char **argv) {
   // signal handlers
@@ -25,10 +35,17 @@ int main(int argc, char **argv) {
   // error signal handlers
   signal(SIGSEGV, safe_exit);
 
-  // marks_page();
-  
-
   {
+    int opt;
+    while ((opt = getopt(argc, argv, "vf:")) != -1) {  // "f:" expects a value
+        switch (opt) {
+            case 'h': PrintHelp(); break;
+            case 'L': break;
+            case 'v': break;
+            default:  /* handle error */;
+        }
+    }
+
     std::string savedir_path = std::getenv("HOME");
     savedir_path.append("/.local/share/bakatui");
     std::string urlfile_path = std::string(savedir_path) + "/url";

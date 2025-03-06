@@ -8,5 +8,5 @@ extern CURL *curl;
 namespace bakaapi {
 void login(std::string username, std::string password);
 void refresh_access_token();
-json get_grades();
+json get_data_from_endpoint(std::string endpoint);
 } // namespace bakaapi

@@ -12,7 +12,7 @@
 #define CTRLD 4
 
 char *choices[] = {
-    "login",    "Marks",  "shedule", "Komens",
+    "login",    "Marks",  "timetable", "Komens",
     "Homework", "Absence", "Exit",    (char *)NULL,
 };
 void (*choicesFuncs[])() = {

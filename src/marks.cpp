@@ -58,7 +58,7 @@ void win_show(WINDOW *win, char *label, int label_color, int width, int height,
 
 void marks_page() {
   // DONT FORGET TO UNCOMMENT
-  json resp_from_api = bakaapi::get_grades();
+  json resp_from_api = bakaapi::get_data_from_endpoint("api/3/marks");
   // std::ifstream f("test-data/marks3.json");
   // json resp_from_api = json::parse(f);
 

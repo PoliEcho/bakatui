@@ -155,21 +155,25 @@ void refresh_access_token() {
 
   access_token = resp_parsed["access_token"];
 }
-
-json get_grades() {
+void is_access_token_empty() {
   if(access_token.empty()) {
     json authfile_parsed = json::parse(SoRAuthFile(false, ""));
     access_token = authfile_parsed["access_token"];
   }
+} 
+
+// supports all endpoints that only require access_token
+json get_data_from_endpoint(std::string endpoint) {
+      is_access_token_empty();
       std::string req_data =
       std::format("Authorization=Bearer&access_token={}",
                   access_token);
 
-    auto [response, http_code] = send_curl_request("api/3/marks", GET, req_data);
+    auto [response, http_code] = send_curl_request(endpoint, GET, req_data);
 
     if(http_code != 200) {
       // DEBUG
-      std::clog << "Failed geting marks code: " << http_code << "\nrequest: " << req_data <<"\nresponse: " << response << std::endl;
+      std::clog << "Failed geting data from endpoint: " << endpoint << " code: " << http_code << "\nrequest: " << req_data <<"\nresponse: " << response << std::endl;
       refresh_access_token();
     }
 
