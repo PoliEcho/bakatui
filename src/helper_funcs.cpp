@@ -106,7 +106,7 @@ void get_input_and_login() {
 
 // Original function
 void print_in_middle(WINDOW *win, int starty, int startx, int width,
-                     char *string, chtype color) {
+                     const char *string, chtype color) {
   int length, x, y;
   float temp;
 
@@ -131,7 +131,7 @@ void print_in_middle(WINDOW *win, int starty, int startx, int width,
 
 // Wide character version
 void wprint_in_middle(WINDOW *win, int starty, int startx, int width,
-                      wchar_t *string, chtype color) {
+                      const wchar_t *string, chtype color) {
   int length, x, y;
   float temp;
 
