@@ -58,8 +58,6 @@ void marks_page() {
   noecho();
   keypad(stdscr, TRUE);
 
-  std::clog << COLS << " " << LINES << std::endl;
-
   /* Initialize all the colors */
   for (uint8_t i = 0; i < 8; i++) {
     init_pair(i, i, COLOR_BLACK);
