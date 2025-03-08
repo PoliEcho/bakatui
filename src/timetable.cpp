@@ -11,6 +11,7 @@
 #include <ncurses.h>
 #include <nlohmann/json.hpp>
 #include <string>
+#include <vector>
 
 using nlohmann::json;
 #define BOTTOM_PADDING 3
@@ -23,8 +24,9 @@ const wchar_t *day_abriviations[] = {nullptr, L"Mo", L"Tu", L"We",
 void draw_grid(const uint8_t num_of_columns, const uint8_t num_of_rows,
                const uint16_t cell_width, const uint16_t cell_height);
 
-uint8_t hour_id_to_index(uint8_t *HourIdLookupTable, uint8_t id) {
-  for (uint8_t i = 0; i < 10; i++) {
+uint8_t hour_id_to_index(const std::vector<uint8_t> &HourIdLookupTable,
+                         uint8_t id) {
+  for (uint8_t i = 0; i < HourIdLookupTable.size(); i++) {
     if (HourIdLookupTable[i] == id) {
       return i;
     }
@@ -62,7 +64,7 @@ void timetable_page() {
 
   // this may be unnecessary but i dont have enaugh data to test it
   // it sorts the hours by start time
-  uint8_t *HourIdLookupTable = new uint8_t[resp_from_api["Hours"].size()];
+  std::vector<uint8_t> HourIdLookupTable(resp_from_api["Hours"].size());
   {
     using Id_and_Start_time = std::tuple<uint8_t, std::string>;
     //                                   ID,      start_time
@@ -317,7 +319,6 @@ void timetable_page() {
   refresh();
   getch();
 timetable_error_exit:
-  delete[] HourIdLookupTable;
   delete[] day_windows;
   delete[] lesson_windows;
   endwin();
