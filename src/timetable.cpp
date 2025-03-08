@@ -14,7 +14,7 @@
 #include <string>
 
 using nlohmann::json;
-#define PADDING 10
+#define BOTTOM_PADDING 3
 
 #define DEFAULT_OFFSET 3
 
@@ -33,14 +33,25 @@ uint8_t hour_id_to_index(uint8_t *HourIdLookupTable, uint8_t id) {
   return 0;
 }
 
-json find_hour_by_id(const json &data, int searchId) {
-  for (const auto &hour : data["Hours"]) {
-    if (hour["Id"] == searchId) {
-      return hour;
+json *partial_json_by_id(json &resp_from_api, const std::string &what,
+                         const std::string &id) {
+  for (uint8_t i = 0; i < resp_from_api[what].size(); i++) {
+    if (resp_from_api[what][i]["Id"].get<std::string>() == id) {
+      return &resp_from_api[what][i];
     }
   }
+  return nullptr;
+}
 
-  return L"";
+std::wstring get_data_for_atom(json &resp_from_api, json *atom,
+                               const std::string &from_where,
+                               const std::string &id_key,
+                               const std::string &what) {
+  return string_to_wstring(
+      partial_json_by_id(resp_from_api, from_where,
+                         atom->at(id_key).get<std::string>())
+          ->at(what)
+          .get<std::string>());
 }
 
 void timetable_page() {
@@ -130,13 +141,14 @@ void timetable_page() {
   cbreak();
   noecho();
   keypad(stdscr, TRUE);
+  curs_set(0);
   /* Initialize all the colors */
   for (uint8_t i = 0; i < 8; i++) {
     init_pair(i, i, COLOR_BLACK);
   }
 
-  const uint16_t cell_width = (COLS - PADDING) / num_of_columns;
-  const uint16_t cell_height = (LINES - PADDING) / num_of_days;
+  const uint16_t cell_width = (COLS - BOTTOM_PADDING) / num_of_columns;
+  const uint16_t cell_height = (LINES - BOTTOM_PADDING) / num_of_days;
 
   WINDOW **day_windows = new WINDOW *[num_of_days];
   WINDOW **lesson_windows = new WINDOW *[num_of_columns];
@@ -209,10 +221,43 @@ void timetable_page() {
           newwin(cell_height, cell_width, i * cell_height + DEFAULT_OFFSET,
                  j * cell_width + DEFAULT_OFFSET);
       box(cells[i][j], 0, 0);
-      wchar_t *string = L"test";
-      wprint_in_middle(cells[i][j], 1, 0, wcslen(string), string,
-                       COLOR_PAIR(0));
-      wrefresh(cells[i][j]);
+      json *atom;
+      for (uint8_t k = 0; k < resp_from_api["Days"][i]["Atoms"].size(); k++) {
+        if (resp_from_api["Days"][i]["Atoms"][k]["HourId"].get<uint8_t>() ==
+            HourIdLookupTable[j]) {
+          atom = &resp_from_api["Days"][i]["Atoms"][k];
+          goto correct_atom_found;
+        }
+      }
+      continue;
+    correct_atom_found:
+      try {
+        if (atom->contains("Change")) {
+        }
+        std::wstring Subject_Abbrev = get_data_for_atom(
+            resp_from_api, atom, "Subjects", "SubjectId", "Abbrev");
+        wprint_in_middle(cells[i][j], cell_height / 2,
+                         cell_width / 2 - wcslen(Subject_Abbrev.c_str()) / 2,
+                         wcslen(Subject_Abbrev.c_str()), Subject_Abbrev.c_str(),
+                         COLOR_PAIR(0));
+
+        std::wstring Room_Abbrev =
+            get_data_for_atom(resp_from_api, atom, "Rooms", "RoomId", "Abbrev");
+        wprint_in_middle(cells[i][j], cell_height - 2,
+                         cell_width - wcslen(Room_Abbrev.c_str()) - 1,
+                         wcslen(Room_Abbrev.c_str()), Room_Abbrev.c_str(),
+                         COLOR_PAIR(0));
+
+        std::wstring Teacher_Abbrev = get_data_for_atom(
+            resp_from_api, atom, "Teachers", "TeacherId", "Abbrev");
+        wprint_in_middle(cells[i][j], cell_height - 2, 1,
+                         wcslen(Teacher_Abbrev.c_str()), Teacher_Abbrev.c_str(),
+                         COLOR_PAIR(0));
+        wrefresh(cells[i][j]);
+      } catch (...) {
+        // world's best error handling
+        __asm__("nop");
+      }
     }
   }
   refresh();
