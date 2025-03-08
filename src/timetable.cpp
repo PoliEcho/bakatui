@@ -1,14 +1,13 @@
 #include "timetable.h"
 #include "color.h"
+#include "const.h"
 #include "helper_funcs.h"
 #include "net.h"
 #include <cstdint>
 #include <curses.h>
 #include <cwchar>
-#include <format>
 #include <fstream>
 #include <iostream>
-#include <locale>
 #include <ncurses.h>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -116,20 +115,22 @@ void timetable_page() {
     delete[] temp_hour_sorting_array;
   }
 
-  for (uint8_t i = 0; i < resp_from_api["Hours"].size(); i++) {
-    std::clog << (int)i << ": " << (int)HourIdLookupTable[i] << "\n";
-  }
-
   // some lambda dark magic
   const uint8_t num_of_columns = [&]() -> uint8_t {
     uint8_t result = 0;
     for (uint8_t i = 0; i < resp_from_api["Days"].size(); i++) {
-      uint8_t currentSize = resp_from_api["Days"][i]["Atoms"].size();
-      if (currentSize > result) {
-        result = currentSize;
+      for (uint8_t j = 0; j < resp_from_api["Days"][i]["Atoms"].size(); j++) {
+        if (hour_id_to_index(
+                HourIdLookupTable,
+                resp_from_api["Days"][i]["Atoms"][j]["HourId"].get<uint8_t>()) >
+            result) {
+          result = hour_id_to_index(
+              HourIdLookupTable,
+              resp_from_api["Days"][i]["Atoms"][j]["HourId"].get<uint8_t>());
+        }
       }
     }
-    return result;
+    return result + 1;
   }();
 
   const uint8_t num_of_days = resp_from_api["Days"].size();
@@ -182,7 +183,8 @@ void timetable_page() {
       if (resp_from_api["Hours"][j]["Id"].get<uint8_t>() ==
           HourIdLookupTable[i]) {
         // DEBUG
-        // std::clog << resp_from_api["Hours"][j]["Caption"].get<std::string>();
+        // std::clog <<
+        // resp_from_api["Hours"][j]["Caption"].get<std::string>();
 
         std::string caption_ascii =
             resp_from_api["Hours"][j]["Caption"].get<std::string>();
@@ -220,7 +222,7 @@ void timetable_page() {
       cells[i][j] =
           newwin(cell_height, cell_width, i * cell_height + DEFAULT_OFFSET,
                  j * cell_width + DEFAULT_OFFSET);
-      box(cells[i][j], 0, 0);
+
       json *atom;
       for (uint8_t k = 0; k < resp_from_api["Days"][i]["Atoms"].size(); k++) {
         if (resp_from_api["Days"][i]["Atoms"][k]["HourId"].get<uint8_t>() ==
@@ -231,30 +233,82 @@ void timetable_page() {
       }
       continue;
     correct_atom_found:
+      std::wstring Subject_Abbrev;
+      std::wstring Room_Abbrev;
+      std::wstring Teacher_Abbrev;
       try {
-        if (atom->contains("Change")) {
+        if (atom->contains("Change") && !atom->at("Change").is_null()) {
+
+          std::clog << "Change: " << atom->at("Change") << "\n";
+
+          switch (
+              hash_djb2a(atom->at("Change")["ChangeType"].get<std::string>())) {
+          case "Canceled"_sh:
+          case "Removed"_sh:
+            wattron(cells[i][j], COLOR_PAIR(COLOR_GREEN));
+            box(cells[i][j], 0, 0);
+            wattroff(cells[i][j], COLOR_PAIR(COLOR_GREEN));
+            break;
+          case "RoomChanged"_sh:
+          case "Substitution"_sh:
+            wattron(cells[i][j], COLOR_PAIR(COLOR_YELLOW));
+            box(cells[i][j], 0, 0);
+            wattroff(cells[i][j], COLOR_PAIR(COLOR_YELLOW));
+            break;
+          case "Added"_sh:
+            wattron(cells[i][j], COLOR_PAIR(COLOR_BLUE));
+            box(cells[i][j], 0, 0);
+            wattroff(cells[i][j], COLOR_PAIR(COLOR_BLUE));
+            break;
+          default:
+            // TODO add error handling
+            __asm__("nop");
+          }
+          if (!atom->at("Change")["TypeAbbrev"].is_null()) {
+            Subject_Abbrev = string_to_wstring(
+                atom->at("Change")["TypeAbbrev"].get<std::string>());
+          }
+        } else {
+          box(cells[i][j], 0, 0);
         }
-        std::wstring Subject_Abbrev = get_data_for_atom(
-            resp_from_api, atom, "Subjects", "SubjectId", "Abbrev");
+
+        if (Subject_Abbrev.empty()) {
+          try {
+            Subject_Abbrev = get_data_for_atom(resp_from_api, atom, "Subjects",
+                                               "SubjectId", "Abbrev");
+          } catch (...) {
+            __asm__("nop");
+          }
+        }
+
+        try {
+          Room_Abbrev = get_data_for_atom(resp_from_api, atom, "Rooms",
+                                          "RoomId", "Abbrev");
+        } catch (...) {
+          __asm__("nop");
+        }
+
+        try {
+          Teacher_Abbrev = get_data_for_atom(resp_from_api, atom, "Teachers",
+                                             "TeacherId", "Abbrev");
+        } catch (...) {
+          __asm__("nop");
+        }
+
         wprint_in_middle(cells[i][j], cell_height / 2,
                          cell_width / 2 - wcslen(Subject_Abbrev.c_str()) / 2,
                          wcslen(Subject_Abbrev.c_str()), Subject_Abbrev.c_str(),
                          COLOR_PAIR(0));
-
-        std::wstring Room_Abbrev =
-            get_data_for_atom(resp_from_api, atom, "Rooms", "RoomId", "Abbrev");
         wprint_in_middle(cells[i][j], cell_height - 2,
                          cell_width - wcslen(Room_Abbrev.c_str()) - 1,
                          wcslen(Room_Abbrev.c_str()), Room_Abbrev.c_str(),
                          COLOR_PAIR(0));
-
-        std::wstring Teacher_Abbrev = get_data_for_atom(
-            resp_from_api, atom, "Teachers", "TeacherId", "Abbrev");
         wprint_in_middle(cells[i][j], cell_height - 2, 1,
                          wcslen(Teacher_Abbrev.c_str()), Teacher_Abbrev.c_str(),
                          COLOR_PAIR(0));
         wrefresh(cells[i][j]);
-      } catch (...) {
+      } catch (const std::exception &e) {
+        std::cerr << RED "[ERROR]" << RESET " " << e.what() << "\n";
         // world's best error handling
         __asm__("nop");
       }
