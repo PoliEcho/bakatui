@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iostream>
 #include <locale>
+#include <panel.h>
 #include <string>
 #include <termios.h>
 #include <unistd.h>
@@ -217,4 +218,16 @@ std::wstring string_to_wstring(const std::string &str) {
 std::string wstring_to_string(const std::wstring &wstr) {
   std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
   return converter.to_bytes(wstr);
+}
+
+void move_panel_relative(PANEL *panel, int dy, int dx) {
+  WINDOW *win = panel_window(panel);
+  int y, x;
+
+  getbegyx(win, y, x);
+
+  int new_y = y + dy;
+  int new_x = x + dx;
+
+  move_panel(panel, new_y, new_x);
 }
