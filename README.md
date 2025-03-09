@@ -5,4 +5,9 @@
 > [nlohmann-json](https://github.com/nlohmann/json)  
 
 > [!IMPORTANT]  
-> Only marks work right now
+> Only folowing works:
+> - [x] Login  
+> - [x] Marks  
+> - [-] Timetable  
+> - [ ] Komens  
+> - [ ] Absence
