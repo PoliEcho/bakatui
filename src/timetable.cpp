@@ -24,9 +24,6 @@ using nlohmann::json;
 const wchar_t *day_abriviations[] = {nullptr, L"Mo", L"Tu", L"We",
                                      L"Th",   L"Fr", L"Sa", L"Su"};
 
-void draw_grid(const uint8_t num_of_columns, const uint8_t num_of_rows,
-               const uint16_t cell_width, const uint16_t cell_height);
-
 void refresh_cells(uint8_t num_of_columns, uint8_t num_of_days,
                    uint16_t cell_width, uint16_t cell_height,
                    std::vector<std::vector<WINDOW *>> &cells,
@@ -62,6 +59,19 @@ std::wstring get_data_for_atom(json &resp_from_api, json *atom,
                          atom->at(id_key).get<std::string>())
           ->at(what)
           .get<std::string>());
+}
+
+json *find_atom_by_indexes(json &resp_from_api, uint8_t day_index,
+                           uint8_t hour_index,
+                           const std::vector<uint8_t> &HourIdLookupTable) {
+  for (uint8_t k = 0; k < resp_from_api["Days"][day_index]["Atoms"].size();
+       k++) {
+    if (resp_from_api["Days"][day_index]["Atoms"][k]["HourId"].get<uint8_t>() ==
+        HourIdLookupTable[hour_index]) {
+      return &resp_from_api["Days"][day_index]["Atoms"][k];
+    }
+  }
+  return nullptr; // No matching atom found
 }
 
 void timetable_page() {
@@ -241,7 +251,6 @@ void timetable_page() {
   refresh();
 
   SelectorType selected_cell(0, 0, 0, num_of_columns - 1, 0, num_of_days - 1);
-  SelectorType prev_selected_cell = selected_cell;
   std::array<WINDOW *, 4> selector_windows;
   std::array<PANEL *, 4> selector_panels;
 
@@ -279,8 +288,33 @@ void timetable_page() {
   update_panels();
   doupdate();
 
+  WINDOW *infobox_window;
+  PANEL *infobox_panel;
+
+  bool is_info_box_open = false;
   int ch;
   while ((ch = getch()) != KEY_F(1)) {
+    if (is_info_box_open) {
+      werase(infobox_window);
+      wrefresh(infobox_window);
+      hide_panel(infobox_panel);
+      del_panel(infobox_panel);
+      delwin(infobox_window);
+      wclear(infobox_window);
+      touchwin(stdscr);
+      refresh();
+      refresh_cells(num_of_columns, num_of_days, cell_width, cell_height, cells,
+                    HourIdLookupTable, resp_from_api);
+      for (uint8_t i = 0; i < selector_panels.size(); i++) {
+        top_panel(selector_panels[i]);
+      }
+
+      update_panels();
+      doupdate();
+      refresh();
+      is_info_box_open = false;
+      continue;
+    }
   run_loop_again:
     switch (ch) {
     case KEY_UP:
@@ -298,6 +332,86 @@ void timetable_page() {
     case KEY_RIGHT:
     case 'l':
       selected_cell.x++;
+      break;
+    case 10: // ENTER
+      json *atom = find_atom_by_indexes(resp_from_api, selected_cell.y,
+                                        selected_cell.x, HourIdLookupTable);
+      if (atom == nullptr) {
+        std::cerr << RED "[ERROR]" << RESET " Selector at invalid position\n";
+        safe_exit(129);
+      }
+
+      infobox_window = newwin(LINES * 0.6, COLS * 0.6, LINES * 0.2, COLS * 0.2);
+      infobox_panel = new_panel(infobox_window);
+
+      wattron(infobox_window, COLOR_PAIR(COLOR_MAGENTA));
+      box(infobox_window, 0, 0);
+      mvwaddch(infobox_window, 2, 0, ACS_LTEE);
+      mvwhline(infobox_window, 2, 1, ACS_HLINE, COLS * 0.6 - 2);
+      mvwaddch(infobox_window, 2, COLS * 0.6 - 1, ACS_RTEE);
+      wattroff(infobox_window, COLOR_PAIR(COLOR_MAGENTA));
+
+      std::wstring Caption;
+      if (atom->contains("Change") && !atom->at("Change").is_null()) {
+        if (!atom->at("Change")["TypeName"].is_null()) {
+          Caption = string_to_wstring(
+              atom->at("Change")["TypeName"].get<std::string>());
+        }
+      }
+
+      if (Caption.empty()) {
+        try {
+          Caption = get_data_for_atom(resp_from_api, atom, "Subjects",
+                                      "SubjectId", "Name");
+        } catch (...) {
+          __asm__("nop");
+        }
+      }
+
+      std::wstring Teacher = get_data_for_atom(resp_from_api, atom, "Teachers",
+                                               "TeacherId", "Name");
+
+      std::wstring groups = L"";
+
+      try {
+        for (uint8_t i = 0; i < atom->at("GroupsIds").size(); i++) {
+          for (uint8_t j = 0; j < resp_from_api["Groups"].size(); j++) {
+            if (resp_from_api["Groups"][j]["GroupId"].get<std::string>() ==
+                atom->at("GroupsIds")[i].get<std::string>()) {
+              groups.append(string_to_wstring(
+                  resp_from_api["Groups"][j]["Name"].get<std::string>()));
+              if (i + 1 < atom->at("GroupsIds").size()) {
+                groups.append(L", ");
+              }
+            }
+          }
+        }
+      } catch (...) {
+        __asm__("nop");
+      }
+
+      std::wstring Room =
+          get_data_for_atom(resp_from_api, atom, "Rooms", "RoomId", "Name");
+
+      wprint_in_middle(
+          infobox_window, 1,
+          //                 COLS * 0.6 - wcslen(Caption.c_str()) / 2,
+          1, wcslen(Caption.c_str()), Caption.c_str(),
+          COLOR_PAIR(COLOR_PAIR(COLOR_CYAN)));
+
+      wprint_in_middle(infobox_window, 3, 1, wcslen(Teacher.c_str()),
+                       Teacher.c_str(), COLOR_PAIR(COLOR_YELLOW));
+
+      wprint_in_middle(infobox_window, 4, 1, wcslen(groups.c_str()),
+                       groups.c_str(), COLOR_PAIR(COLOR_CYAN));
+
+      wprint_in_middle(infobox_window, 5, 1, wcslen(Room.c_str()), Room.c_str(),
+                       COLOR_PAIR(COLOR_YELLOW));
+
+      top_panel(infobox_panel);
+      update_panels();
+      doupdate();
+      continue;
       break;
     }
     { // print selected indicator
@@ -346,16 +460,10 @@ void refresh_cells(uint8_t num_of_columns, uint8_t num_of_days,
   for (uint8_t i = 0; i < num_of_days; i++) {
     for (uint8_t j = 0; j < num_of_columns; j++) {
 
-      json *atom;
-      for (uint8_t k = 0; k < resp_from_api["Days"][i]["Atoms"].size(); k++) {
-        if (resp_from_api["Days"][i]["Atoms"][k]["HourId"].get<uint8_t>() ==
-            HourIdLookupTable[j]) {
-          atom = &resp_from_api["Days"][i]["Atoms"][k];
-          goto correct_atom_found;
-        }
+      json *atom = find_atom_by_indexes(resp_from_api, i, j, HourIdLookupTable);
+      if (atom == nullptr) {
+        continue;
       }
-      continue;
-    correct_atom_found:
       std::wstring Subject_Abbrev;
       std::wstring Room_Abbrev;
       std::wstring Teacher_Abbrev;
