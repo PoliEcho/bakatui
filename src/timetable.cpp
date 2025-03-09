@@ -13,6 +13,7 @@
 #include <nlohmann/json.hpp>
 #include <panel.h>
 #include <string>
+#include <sys/types.h>
 #include <vector>
 
 using nlohmann::json;
@@ -25,6 +26,12 @@ const wchar_t *day_abriviations[] = {nullptr, L"Mo", L"Tu", L"We",
 
 void draw_grid(const uint8_t num_of_columns, const uint8_t num_of_rows,
                const uint16_t cell_width, const uint16_t cell_height);
+
+void refresh_cells(uint8_t num_of_columns, uint8_t num_of_days,
+                   uint16_t cell_width, uint16_t cell_height,
+                   std::vector<std::vector<WINDOW *>> &cells,
+                   std::vector<uint8_t> &HourIdLookupTable,
+                   json &resp_from_api);
 
 uint8_t hour_id_to_index(const std::vector<uint8_t> &HourIdLookupTable,
                          uint8_t id) {
@@ -226,6 +233,118 @@ void timetable_page() {
       cells[i][j] =
           newwin(cell_height, cell_width, i * cell_height + DEFAULT_OFFSET,
                  j * cell_width + DEFAULT_OFFSET);
+    }
+  }
+  refresh_cells(num_of_columns, num_of_days, cell_width, cell_height, cells,
+                HourIdLookupTable, resp_from_api);
+
+  refresh();
+
+  SelectorType selected_cell(0, 0, 0, num_of_columns - 1, 0, num_of_days - 1);
+  SelectorType prev_selected_cell = selected_cell;
+  std::array<WINDOW *, 4> selector_windows;
+  std::array<PANEL *, 4> selector_panels;
+
+  {
+    const chtype corners[] = {
+        ACS_ULCORNER, /* Upper left corner */
+        ACS_URCORNER, /* Upper right corner */
+        ACS_LLCORNER, /* Lower left corner */
+        ACS_LRCORNER  /* Lower right corner */
+    };
+
+    unsigned short x_offset, y_offset;
+    for (uint8_t i = 0; i < selector_windows.size(); i++) {
+
+      if (!(i % 2 == 0)) {
+        x_offset = cell_width - 1;
+      } else {
+        x_offset = 0;
+      }
+      if (!(i < 2)) {
+        y_offset = cell_height - 1;
+      } else {
+        y_offset = 0;
+      }
+
+      selector_windows[i] =
+          newwin(1, 1, DEFAULT_OFFSET + y_offset, DEFAULT_OFFSET + x_offset);
+      selector_panels[i] = new_panel(selector_windows[i]);
+      wattron(selector_windows[i], COLOR_PAIR(COLOR_RED));
+      mvwaddch(selector_windows[i], 0, 0, corners[i]);
+      wattroff(selector_windows[i], COLOR_PAIR(COLOR_RED));
+    }
+  }
+
+  update_panels();
+  doupdate();
+
+  int ch;
+  while ((ch = getch()) != KEY_F(1)) {
+  run_loop_again:
+    switch (ch) {
+    case KEY_UP:
+    case 'k':
+      selected_cell.y--;
+      break;
+    case KEY_DOWN:
+    case 'j':
+      selected_cell.y++;
+      break;
+    case KEY_LEFT:
+    case 'h':
+      selected_cell.x--;
+      break;
+    case KEY_RIGHT:
+    case 'l':
+      selected_cell.x++;
+      break;
+    }
+    { // print selected indicator
+      chtype top_left_corner =
+          mvwinch(cells[selected_cell.y][selected_cell.x], 0, 0);
+
+      if (!((top_left_corner & A_CHARTEXT) == 32)) {
+        for (uint8_t i = 0; i < selector_panels.size(); i++) {
+          unsigned short x_offset, y_offset;
+          if (!(i % 2 == 0)) {
+            x_offset = cell_width - 1;
+          } else {
+            x_offset = 0;
+          }
+          if (!(i < 2)) {
+            y_offset = cell_height - 1;
+          } else {
+            y_offset = 0;
+          }
+
+          move_panel(selector_panels[i],
+                     DEFAULT_OFFSET + y_offset + selected_cell.y * cell_height,
+                     DEFAULT_OFFSET + x_offset + selected_cell.x * cell_width);
+        }
+        refresh_cells(num_of_columns, num_of_days, cell_width, cell_height,
+                      cells, HourIdLookupTable, resp_from_api);
+        update_panels();
+        doupdate();
+
+      } else {
+        // skip if the cell is empty
+        goto run_loop_again;
+      }
+    }
+  }
+  delete[] day_windows;
+  delete[] lesson_windows;
+  endwin();
+}
+
+void refresh_cells(uint8_t num_of_columns, uint8_t num_of_days,
+                   uint16_t cell_width, uint16_t cell_height,
+                   std::vector<std::vector<WINDOW *>> &cells,
+                   std::vector<uint8_t> &HourIdLookupTable,
+                   json &resp_from_api) {
+  for (uint8_t i = 0; i < num_of_days; i++) {
+    for (uint8_t j = 0; j < num_of_columns; j++) {
 
       json *atom;
       for (uint8_t k = 0; k < resp_from_api["Days"][i]["Atoms"].size(); k++) {
@@ -316,104 +435,4 @@ void timetable_page() {
       }
     }
   }
-  refresh();
-
-  SelectorType selected_cell(0, 0, 0, num_of_columns - 1, 0, num_of_days - 1);
-  std::array<WINDOW *, 4> selector_windows;
-  std::array<PANEL *, 4> selector_panels;
-
-  {
-    const chtype corners[] = {
-        ACS_ULCORNER, /* Upper left corner */
-        ACS_URCORNER, /* Upper right corner */
-        ACS_LLCORNER, /* Lower left corner */
-        ACS_LRCORNER  /* Lower right corner */
-    };
-
-    unsigned short x_offset, y_offset;
-    for (uint8_t i = 0; i < selector_windows.size(); i++) {
-
-      if (!(i % 2 == 0)) {
-        x_offset = cell_width - 1;
-      } else {
-        x_offset = 0;
-      }
-      if (!(i < 2)) {
-        y_offset = cell_height - 1;
-      } else {
-        y_offset = 0;
-      }
-
-      selector_windows[i] =
-          newwin(1, 1, DEFAULT_OFFSET + y_offset, DEFAULT_OFFSET + x_offset);
-      selector_panels[i] = new_panel(selector_windows[i]);
-      wattron(selector_windows[i], COLOR_PAIR(COLOR_RED));
-      mvwaddch(selector_windows[i], 0, 0, corners[i]);
-      wattroff(selector_windows[i], COLOR_PAIR(COLOR_RED));
-    }
-  }
-
-  update_panels();
-  doupdate();
-
-  int ch;
-  while ((ch = getch()) != KEY_F(1)) {
-  run_loop_again:
-    switch (ch) {
-    case KEY_UP:
-    case 'k':
-      selected_cell.y--;
-      break;
-    case KEY_DOWN:
-    case 'j':
-      selected_cell.y++;
-      break;
-    case KEY_LEFT:
-    case 'h':
-      selected_cell.x--;
-      break;
-    case KEY_RIGHT:
-    case 'l':
-      selected_cell.x++;
-      break;
-    }
-    { // print selected indicator
-      chtype top_left_corner =
-          mvwinch(cells[selected_cell.y][selected_cell.x], 0, 0);
-
-      if (!((top_left_corner & A_CHARTEXT) == 32)) {
-        for (uint8_t i = 0; i < selector_panels.size(); i++) {
-          unsigned short x_offset, y_offset;
-          if (!(i % 2 == 0)) {
-            x_offset = cell_width - 1;
-          } else {
-            x_offset = 0;
-          }
-          if (!(i < 2)) {
-            y_offset = cell_height - 1;
-          } else {
-            y_offset = 0;
-          }
-
-          move_panel(selector_panels[i],
-                     DEFAULT_OFFSET + y_offset + selected_cell.y * cell_height,
-                     DEFAULT_OFFSET + x_offset + selected_cell.x * cell_width);
-        }
-        for (uint8_t i = 0; i < num_of_days; i++) {
-          for (uint8_t j = 0; j < num_of_columns; j++) {
-            wrefresh(cells[i][j]);
-          }
-        }
-        update_panels();
-        doupdate();
-
-      } else {
-        // skip if the cell is empty
-        goto run_loop_again;
-      }
-    }
-  }
-  delete[] day_windows;
-  delete[] lesson_windows;
-  endwin();
 }
