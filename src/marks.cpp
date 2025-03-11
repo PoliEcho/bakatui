@@ -8,8 +8,6 @@
 #include <cstring>
 #include <curses.h>
 #include <format>
-#include <iostream>
-#include <locale>
 #include <menu.h>
 #include <nlohmann/json.hpp>
 #include <panel.h>
@@ -47,6 +45,7 @@ void marks_page() {
   size_t size_my_panels = resp_from_api["Subjects"].size();
   my_panels = new (std::nothrow) PANEL *[size_my_panels];
 
+  // trows compiler warning for some reason but cannot be removed
   PANEL *top;
   int ch;
 
@@ -137,7 +136,7 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
   x = DEFAULT_X_OFFSET;
   uint8_t curent_color = 0;
 
-  int MaxHight = 0;
+  unsigned int MaxHight = 0;
   // this loop through subjects
   for (i = 0; i < n; ++i) {
 
@@ -154,7 +153,7 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
              wsub_name.c_str(), wsub_avg_s.c_str());
 
     size_t max_text_length = wcslen(label);
-    for (int j = 0; j < marks_json["Subjects"][i]["Marks"].size(); j++) {
+    for (unsigned int j = 0; j < static_cast<unsigned int>(marks_json["Subjects"][i]["Marks"].size()); j++) {
       std::string caption =
           rm_tr_le_whitespace(marks_json["Subjects"][i]["Marks"][j]["Caption"]);
       std::string theme =
@@ -179,8 +178,7 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
       MaxHight = 0;
     }
 
-    if (marks_json["Subjects"][i]["Marks"].size() * 2 + DEFAULT_PADDING >
-        MaxHight) {
+    if (static_cast<unsigned int>(marks_json["Subjects"][i]["Marks"].size()) * 2 + DEFAULT_PADDING > MaxHight) {
       MaxHight =
           marks_json["Subjects"][i]["Marks"].size() * 2 + DEFAULT_PADDING;
     }
@@ -198,6 +196,8 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
 /* Show the window with a border and a label */
 void win_show(WINDOW *win, wchar_t *label, int label_color, int width,
               int height, json marks_json, int SubjectIndex) {
+  
+  // is the compiler smoking weed or something, why is it thinking starty is not used ??
   int startx, starty;
 
   wresize(win, height, width);

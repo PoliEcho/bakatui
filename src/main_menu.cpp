@@ -5,9 +5,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <curses.h>
-#include <locale>
 #include <menu.h>
-#include <string>
 
 #include "marks.h"
 

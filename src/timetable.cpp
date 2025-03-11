@@ -7,7 +7,6 @@
 #include <cstdint>
 #include <curses.h>
 #include <cwchar>
-#include <fstream>
 #include <iostream>
 #include <ncurses.h>
 #include <nlohmann/json.hpp>
@@ -76,10 +75,9 @@ json *find_atom_by_indexes(json &resp_from_api, uint8_t day_index,
 
 void timetable_page() {
   // DONT FORGET TO UNCOMMENT
-  // json resp_from_api =
-  // bakaapi::get_data_from_endpoint("api/3/timetable/actual");
-  std::ifstream f("test-data/timetable.json");
-  json resp_from_api = json::parse(f);
+  json resp_from_api = bakaapi::get_data_from_endpoint("api/3/timetable/actual");
+  /*std::ifstream f("test-data/timetable.json");
+  json resp_from_api = json::parse(f);*/
 
   // this may be unnecessary but i dont have enaugh data to test it
   // it sorts the hours by start time
@@ -295,6 +293,7 @@ void timetable_page() {
   int ch;
   while ((ch = getch()) != KEY_F(1)) {
     if (is_info_box_open) {
+      move_panel(infobox_panel, LINES -1, COLS-1);
       werase(infobox_window);
       wrefresh(infobox_window);
       hide_panel(infobox_panel);
@@ -380,7 +379,7 @@ void timetable_page() {
                 atom->at("GroupsIds")[i].get<std::string>()) {
               groups.append(string_to_wstring(
                   resp_from_api["Groups"][j]["Name"].get<std::string>()));
-              if (i + 1 < atom->at("GroupsIds").size()) {
+              if (static_cast<size_t>(i + 1) < atom->at("GroupsIds").size()) {
                 groups.append(L", ");
               }
             }
