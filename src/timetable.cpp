@@ -16,7 +16,7 @@
 #include <vector>
 
 using nlohmann::json;
-#define BOTTOM_PADDING 3
+#define BOTTOM_PADDING 5
 
 #define DEFAULT_OFFSET 3
 
@@ -246,6 +246,10 @@ void timetable_page() {
       wattroff(selector_windows[i], COLOR_PAIR(COLOR_RED));
     }
   }
+  attron(COLOR_PAIR(COLOR_BLUE));
+  mvprintw(LINES - 2, 0,
+           "Arrows/hjkl to select | ENTER to show info | F1 to exit");
+  attroff(COLOR_PAIR(COLOR_BLUE));
 
   update_panels();
   doupdate();
@@ -401,6 +405,11 @@ void timetable_page() {
       mvwaddwstr(infobox_window, 4, 1, Groups.c_str());
       mvwaddwstr(infobox_window, 6, 1, Theme.c_str());
       wattroff(infobox_window, COLOR_PAIR(COLOR_CYAN));
+
+      wattron(infobox_window, COLOR_PAIR(COLOR_BLUE));
+      mvwaddstr(infobox_window, getmaxy(infobox_window) - 2, 1,
+                "Press any key to close");
+      wattroff(infobox_window, COLOR_PAIR(COLOR_BLUE));
 
       top_panel(infobox_panel);
       update_panels();
