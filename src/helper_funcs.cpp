@@ -13,6 +13,7 @@
 #include <string>
 #include <termios.h>
 #include <unistd.h>
+#include "main.h"
 
 void safe_exit(int code) {
   switch (code) {
@@ -150,7 +151,10 @@ void wprint_in_middle(WINDOW *win, int starty, int startx, int width,
   temp = (width - length) / 2;
   x = startx + (int)temp;
   wattron(win, color);
-  mvwaddwstr(win, y, x, string);
+  if (mvwaddwstr(win, y, x, string) == ERR) {
+    if(config.verbose){
+    std::wcerr << RED"[ERROR]"<< RESET" wprint_in_middle failed to print " << string << "\n";
+  }}
   wattroff(win, color);
   refresh();
 }

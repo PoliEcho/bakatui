@@ -23,7 +23,11 @@ using nlohmann::json;
 const wchar_t *day_abriviations[] = {nullptr, L"Mo", L"Tu", L"We",
                                      L"Th",   L"Fr", L"Sa", L"Su"};
 
-void refresh_cells(uint8_t num_of_columns, uint8_t num_of_days,
+void draw_days(WINDOW**& day_windows, uint16_t cell_height,uint8_t num_of_days, json &resp_from_api);
+
+void draw_lessons(WINDOW**& lesson_windows, uint8_t num_of_columns, uint16_t cell_width, std::vector<uint8_t> &HourIdLookupTable, json &resp_from_api);
+
+void draw_cells(uint8_t num_of_columns, uint8_t num_of_days,
                    uint16_t cell_width, uint16_t cell_height,
                    std::vector<std::vector<WINDOW *>> &cells,
                    std::vector<uint8_t> &HourIdLookupTable,
@@ -167,6 +171,7 @@ void timetable_page() {
     init_pair(i, i, COLOR_BLACK);
   }
 
+  // will cause division by zero after access token refresh. for some reason
   const uint16_t cell_width = (COLS - BOTTOM_PADDING) / num_of_columns;
   const uint16_t cell_height = (LINES - BOTTOM_PADDING) / num_of_days;
 
@@ -175,67 +180,21 @@ void timetable_page() {
   std::vector<std::vector<WINDOW *>> cells(
       num_of_days, std::vector<WINDOW *>(num_of_columns));
 
+  // init day windows 
   for (uint8_t i = 0; i < num_of_days; i++) {
     day_windows[i] = newwin(cell_height, DEFAULT_OFFSET,
                             i * cell_height + DEFAULT_OFFSET, 0);
-    // this wont draw left boarder window making it so it looks partially
-    // offscreen
-    wborder(day_windows[i], ' ', 0, 0, 0, ACS_HLINE, 0, ACS_HLINE, 0);
-    const wchar_t *day_abriv =
-        day_abriviations[resp_from_api["Days"][i]["DayOfWeek"].get<uint8_t>()];
-
-    wprint_in_middle(day_windows[i], cell_height / 2, 0, wcslen(day_abriv),
-                     day_abriv, COLOR_PAIR(0));
-    wrefresh(day_windows[i]);
   }
+  draw_days(day_windows, cell_height,num_of_days, resp_from_api);
+
 
   for (uint8_t i = 0; i < num_of_columns; i++) {
-
     lesson_windows[i] =
         newwin(DEFAULT_OFFSET, cell_width, 0, i * cell_width + DEFAULT_OFFSET);
-    wborder(lesson_windows[i], 0, 0, ' ', 0, ACS_VLINE, ACS_VLINE, 0, 0);
-    std::wstring caption;
-    std::wstring start_time;
-    std::wstring end_time;
-
-    for (uint8_t j = 0; j < resp_from_api["Hours"].size(); j++) {
-      if (resp_from_api["Hours"][j]["Id"].get<uint8_t>() ==
-          HourIdLookupTable[i]) {
-        // DEBUG
-        // std::clog <<
-        // resp_from_api["Hours"][j]["Caption"].get<std::string>();
-
-        std::string caption_ascii =
-            resp_from_api["Hours"][j]["Caption"].get<std::string>();
-        std::string start_time_ascii =
-            resp_from_api["Hours"][j]["BeginTime"].get<std::string>();
-        std::string end_time_ascii =
-            resp_from_api["Hours"][j]["EndTime"].get<std::string>();
-
-        caption = string_to_wstring(caption_ascii);
-        start_time = string_to_wstring(start_time_ascii);
-        end_time = string_to_wstring(end_time_ascii);
-
-        goto hour_id_found;
-      }
-    }
-    std::cerr << RED "[ERROR]" << RESET " Hour with id " << HourIdLookupTable[i]
-              << " not found\n";
-    safe_exit(128);
-
-  hour_id_found:
-
-    wprint_in_middle(lesson_windows[i], 0, cell_width / 2, caption.length(),
-                     caption.c_str(), COLOR_PAIR(0));
-    wprint_in_middle(lesson_windows[i], 1, 1, start_time.length(),
-                     start_time.c_str(), COLOR_PAIR(0));
-    print_in_middle(lesson_windows[i], 1, cell_width / 2, 1, "-",
-                    COLOR_PAIR(0));
-    wprint_in_middle(lesson_windows[i], 1, cell_width - end_time.length() - 1,
-                     end_time.length(), end_time.c_str(), COLOR_PAIR(0));
-    wrefresh(lesson_windows[i]);
   }
+	draw_lessons(lesson_windows, num_of_columns, cell_width, HourIdLookupTable, resp_from_api);
 
+  // init the cell windows
   for (uint8_t i = 0; i < num_of_days; i++) {
     for (uint8_t j = 0; j < num_of_columns; j++) {
       cells[i][j] =
@@ -243,7 +202,7 @@ void timetable_page() {
                  j * cell_width + DEFAULT_OFFSET);
     }
   }
-  refresh_cells(num_of_columns, num_of_days, cell_width, cell_height, cells,
+  draw_cells(num_of_columns, num_of_days, cell_width, cell_height, cells,
                 HourIdLookupTable, resp_from_api);
 
   refresh();
@@ -293,27 +252,35 @@ void timetable_page() {
   int ch;
   while ((ch = getch()) != KEY_F(1)) {
     if (is_info_box_open) {
-      move_panel(infobox_panel, LINES -1, COLS-1);
-      werase(infobox_window);
-      wrefresh(infobox_window);
+      // Hide and delete panel first
       hide_panel(infobox_panel);
       del_panel(infobox_panel);
+      
+      // Delete the window
       delwin(infobox_window);
-      wclear(infobox_window);
+      
+      // Force full screen redraw
       touchwin(stdscr);
       refresh();
-      refresh_cells(num_of_columns, num_of_days, cell_width, cell_height, cells,
-                    HourIdLookupTable, resp_from_api);
+      
+      // Redraw everithing
+			draw_days(day_windows, cell_height,num_of_days, resp_from_api);
+			draw_lessons(lesson_windows, num_of_columns, cell_width, HourIdLookupTable, resp_from_api);
+      draw_cells(num_of_columns, num_of_days, cell_width, cell_height, cells,
+                   HourIdLookupTable, resp_from_api);
+                   
+      // Restore selection indicators
       for (uint8_t i = 0; i < selector_panels.size(); i++) {
-        top_panel(selector_panels[i]);
+          top_panel(selector_panels[i]);
       }
-
+      
+      // Update panels and screen
       update_panels();
       doupdate();
-      refresh();
+      
       is_info_box_open = false;
       continue;
-    }
+  }
   run_loop_again:
     switch (ch) {
     case KEY_UP:
@@ -342,6 +309,7 @@ void timetable_page() {
 
       infobox_window = newwin(LINES * 0.6, COLS * 0.6, LINES * 0.2, COLS * 0.2);
       infobox_panel = new_panel(infobox_window);
+      is_info_box_open = true;
 
       wattron(infobox_window, COLOR_PAIR(COLOR_MAGENTA));
       box(infobox_window, 0, 0);
@@ -367,45 +335,70 @@ void timetable_page() {
         }
       }
 
-      std::wstring Teacher = get_data_for_atom(resp_from_api, atom, "Teachers",
+			std::wstring Teacher= L"";
+			try {
+      Teacher = get_data_for_atom(resp_from_api, atom, "Teachers",
                                                "TeacherId", "Name");
+			} catch(...) {
+				__asm__("nop");
+			}
+      Teacher.insert(0,L"Teacher: ");
 
-      std::wstring groups = L"";
-
+      std::wstring Groups = L"";
       try {
-        for (uint8_t i = 0; i < atom->at("GroupsIds").size(); i++) {
+        for (uint8_t i = 0; i < atom->at("GroupIds").size(); i++) {
           for (uint8_t j = 0; j < resp_from_api["Groups"].size(); j++) {
-            if (resp_from_api["Groups"][j]["GroupId"].get<std::string>() ==
-                atom->at("GroupsIds")[i].get<std::string>()) {
-              groups.append(string_to_wstring(
+            if (resp_from_api["Groups"][j]["Id"].get<std::string>() ==
+                atom->at("GroupIds")[i].get<std::string>()) {
+              Groups.append(string_to_wstring(
                   resp_from_api["Groups"][j]["Name"].get<std::string>()));
-              if (static_cast<size_t>(i + 1) < atom->at("GroupsIds").size()) {
-                groups.append(L", ");
+              if (static_cast<size_t>(i + 1) < atom->at("GroupIds").size()) {
+                Groups.append(L", ");
               }
             }
           }
         }
+      } catch (const std::exception &e) {
+        std::cerr << RED "[ERROR]" << RESET " " << e.what() << "\n";
+      }
+      Groups = wrm_tr_le_whitespace(Groups);
+      Groups.insert(0, L"Groups: ");
+
+      std::wstring Room= L"";
+      try {
+        Room = get_data_for_atom(resp_from_api, atom, "Rooms", "RoomId", "Name");
+        if(Room.empty()) {
+          Room = get_data_for_atom(resp_from_api, atom, "Rooms", "RoomId", "Abbrev");;
+        }
       } catch (...) {
         __asm__("nop");
       }
+      Room.insert(0, L"Room: ");
 
-      std::wstring Room =
-          get_data_for_atom(resp_from_api, atom, "Rooms", "RoomId", "Name");
+      std::wstring Theme= L"";
+      try {
+        Theme = wrm_tr_le_whitespace(string_to_wstring(atom->at("Theme").get<std::string>()));
+      } catch (...) {
+        __asm__("nop");
+      }
+      Theme.insert(0, L"Theme: ");
 
       wprint_in_middle(
-          infobox_window, 1,
-          //                 COLS * 0.6 - wcslen(Caption.c_str()) / 2,
-          1, wcslen(Caption.c_str()), Caption.c_str(),
-          COLOR_PAIR(COLOR_PAIR(COLOR_CYAN)));
+        infobox_window, 1, 0, getmaxx(infobox_window), Caption.c_str(),
+        COLOR_PAIR(COLOR_CYAN));
+      
+      // printing out of order to reduce wattro* directives
+      wattron(infobox_window, COLOR_PAIR(COLOR_YELLOW));
+      mvwaddwstr(infobox_window, 3, 1, Teacher.c_str());
+      mvwaddwstr(infobox_window, 5, 1, Room.c_str());
+      wattroff(infobox_window, COLOR_PAIR(COLOR_YELLOW));
 
-      wprint_in_middle(infobox_window, 3, 1, wcslen(Teacher.c_str()),
-                       Teacher.c_str(), COLOR_PAIR(COLOR_YELLOW));
+      wattron(infobox_window, COLOR_PAIR(COLOR_CYAN));
+      mvwaddwstr(infobox_window, 4, 1, Groups.c_str());
+      mvwaddwstr(infobox_window, 6, 1, Theme.c_str());
+      wattroff(infobox_window, COLOR_PAIR(COLOR_CYAN));
 
-      wprint_in_middle(infobox_window, 4, 1, wcslen(groups.c_str()),
-                       groups.c_str(), COLOR_PAIR(COLOR_CYAN));
-
-      wprint_in_middle(infobox_window, 5, 1, wcslen(Room.c_str()), Room.c_str(),
-                       COLOR_PAIR(COLOR_YELLOW));
+      
 
       top_panel(infobox_panel);
       update_panels();
@@ -435,7 +428,7 @@ void timetable_page() {
                      DEFAULT_OFFSET + y_offset + selected_cell.y * cell_height,
                      DEFAULT_OFFSET + x_offset + selected_cell.x * cell_width);
         }
-        refresh_cells(num_of_columns, num_of_days, cell_width, cell_height,
+        draw_cells(num_of_columns, num_of_days, cell_width, cell_height,
                       cells, HourIdLookupTable, resp_from_api);
         update_panels();
         doupdate();
@@ -451,7 +444,59 @@ void timetable_page() {
   endwin();
 }
 
-void refresh_cells(uint8_t num_of_columns, uint8_t num_of_days,
+void draw_days(WINDOW**& day_windows, uint16_t cell_height,uint8_t num_of_days, json &resp_from_api) {
+  for (uint8_t i = 0; i < num_of_days; i++) {
+  // this wont draw left boarder window making it so it looks partially
+    // offscreen
+    wborder(day_windows[i], ' ', 0, 0, 0, ACS_HLINE, 0, ACS_HLINE, 0);
+
+    mvwaddwstr(day_windows[i], cell_height / 2, 0,day_abriviations[resp_from_api["Days"][i]["DayOfWeek"].get<uint8_t>()]);
+    wrefresh(day_windows[i]);
+  }
+}
+
+void draw_lessons(WINDOW**& lesson_windows, uint8_t num_of_columns, uint16_t cell_width, std::vector<uint8_t> &HourIdLookupTable, json &resp_from_api) {
+	for (uint8_t i = 0; i < num_of_columns; i++) {
+	wborder(lesson_windows[i], 0, 0, ' ', 0, ACS_VLINE, ACS_VLINE, 0, 0);
+    std::wstring caption;
+    std::wstring start_time;
+    std::wstring end_time;
+
+    for (uint8_t j = 0; j < resp_from_api["Hours"].size(); j++) {
+      if (resp_from_api["Hours"][j]["Id"].get<uint8_t>() ==
+          HourIdLookupTable[i]) {
+				
+        std::string caption_ascii =
+            resp_from_api["Hours"][j]["Caption"].get<std::string>();
+        std::string start_time_ascii =
+            resp_from_api["Hours"][j]["BeginTime"].get<std::string>();
+        std::string end_time_ascii =
+            resp_from_api["Hours"][j]["EndTime"].get<std::string>();
+
+        caption = string_to_wstring(caption_ascii);
+        start_time = string_to_wstring(start_time_ascii);
+        end_time = string_to_wstring(end_time_ascii);
+
+        goto hour_id_found;
+      }
+    }
+    std::cerr << RED "[ERROR]" << RESET " Hour with id " << HourIdLookupTable[i]
+              << " not found\n";
+    safe_exit(128);
+
+  hour_id_found:
+
+    wprint_in_middle(lesson_windows[i], 0, 0, cell_width,
+                     caption.c_str(), COLOR_PAIR(0));
+    mvwaddwstr(lesson_windows[i], 1, 1, start_time.c_str());
+    print_in_middle(lesson_windows[i], 1, 0, cell_width, "-",
+                    COLOR_PAIR(0));
+    mvwaddwstr(lesson_windows[i], 1, cell_width - end_time.length() - 1, end_time.c_str());
+    wrefresh(lesson_windows[i]);
+		}
+}
+
+void draw_cells(uint8_t num_of_columns, uint8_t num_of_days,
                    uint16_t cell_width, uint16_t cell_height,
                    std::vector<std::vector<WINDOW *>> &cells,
                    std::vector<uint8_t> &HourIdLookupTable,
@@ -524,16 +569,13 @@ void refresh_cells(uint8_t num_of_columns, uint8_t num_of_days,
         }
 
         wprint_in_middle(cells[i][j], cell_height / 2,
-                         cell_width / 2 - wcslen(Subject_Abbrev.c_str()) / 2,
-                         wcslen(Subject_Abbrev.c_str()), Subject_Abbrev.c_str(),
+                         0,
+                         cell_width, Subject_Abbrev.c_str(),
                          COLOR_PAIR(0));
-        wprint_in_middle(cells[i][j], cell_height - 2,
-                         cell_width - wcslen(Room_Abbrev.c_str()) - 1,
-                         wcslen(Room_Abbrev.c_str()), Room_Abbrev.c_str(),
-                         COLOR_PAIR(0));
-        wprint_in_middle(cells[i][j], cell_height - 2, 1,
-                         wcslen(Teacher_Abbrev.c_str()), Teacher_Abbrev.c_str(),
-                         COLOR_PAIR(0));
+        mvwaddwstr(cells[i][j], cell_height - 2,
+                         cell_width - wcslen(Room_Abbrev.c_str()) - 1, Room_Abbrev.c_str());
+
+        mvwaddwstr(cells[i][j], cell_height - 2, 1, Teacher_Abbrev.c_str());
         wrefresh(cells[i][j]);
       } catch (const std::exception &e) {
         std::cerr << RED "[ERROR]" << RESET " " << e.what() << "\n";
