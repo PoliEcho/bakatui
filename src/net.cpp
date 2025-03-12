@@ -129,8 +129,9 @@ void login(std::string username, std::string password) {
 }
 
 void refresh_access_token() {
-  // DEBUG
+  if(config.verbose) {
   std::clog << "refreshing access token please wait...\n";
+  }
 
   json authfile_parsed = json::parse(SoRAuthFile(false, ""));
 
@@ -157,6 +158,7 @@ void refresh_access_token() {
 
   access_token = resp_parsed["access_token"];
 }
+
 void is_access_token_empty() {
   if (access_token.empty()) {
     json authfile_parsed = json::parse(SoRAuthFile(false, ""));
@@ -167,6 +169,7 @@ void is_access_token_empty() {
 // supports all endpoints that only require access_token
 json get_data_from_endpoint(std::string endpoint) {
   is_access_token_empty();
+  access_token_refreshed:
   std::string req_data =
       std::format("Authorization=Bearer&access_token={}", access_token);
 
@@ -178,6 +181,7 @@ json get_data_from_endpoint(std::string endpoint) {
               << " code: " << http_code << "\nrequest: " << req_data
               << "\nresponse: " << response << std::endl;
     refresh_access_token();
+    goto access_token_refreshed;
   }
 
   return json::parse(response);
