@@ -3,11 +3,12 @@
 
 > ### Dependencies:
 > [nlohmann-json](https://github.com/nlohmann/json)  
+> ncurses  
 
 > [!IMPORTANT]  
 > Only folowing works:
 > - [x] Login  
 > - [x] Marks  
-> - [-] Timetable  
+> - [x] Timetable  
 > - [ ] Komens  
 > - [ ] Absence
