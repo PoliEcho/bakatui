@@ -1,7 +1,7 @@
 #include <string_view>
 #ifndef VERSION
 
-#define VERSION "0.6"
+#define VERSION "0.7"
 #define NAME "bakatui"
 
 inline constexpr auto hash_djb2a(const std::string_view sv) {
