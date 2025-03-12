@@ -33,6 +33,9 @@ $(OBJ_PATH)/%.o: $(SRC_PATH)/%.cpp
 	$(CPPC) $(CPPC_FLAGS) -c $< -o $@
 
 
+install:
+	@install -vpm 755 -o root -g root $(BIN_PATH)/bakatui /usr/bin/
+
 clean:
 	rm -fr build
 
