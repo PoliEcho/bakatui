@@ -171,7 +171,6 @@ void timetable_page() {
     init_pair(i, i, COLOR_BLACK);
   }
 
-  // will cause division by zero after access token refresh. for some reason
   const uint16_t cell_width = (COLS - BOTTOM_PADDING) / num_of_columns;
   const uint16_t cell_height = (LINES - BOTTOM_PADDING) / num_of_days;
 
@@ -252,14 +251,12 @@ void timetable_page() {
   int ch;
   while ((ch = getch()) != KEY_F(1)) {
     if (is_info_box_open) {
-      // Hide and delete panel first
+
       hide_panel(infobox_panel);
       del_panel(infobox_panel);
-      
-      // Delete the window
+    
       delwin(infobox_window);
       
-      // Force full screen redraw
       touchwin(stdscr);
       refresh();
       
@@ -268,13 +265,10 @@ void timetable_page() {
 			draw_lessons(lesson_windows, num_of_columns, cell_width, HourIdLookupTable, resp_from_api);
       draw_cells(num_of_columns, num_of_days, cell_width, cell_height, cells,
                    HourIdLookupTable, resp_from_api);
-                   
-      // Restore selection indicators
+
       for (uint8_t i = 0; i < selector_panels.size(); i++) {
           top_panel(selector_panels[i]);
       }
-      
-      // Update panels and screen
       update_panels();
       doupdate();
       
