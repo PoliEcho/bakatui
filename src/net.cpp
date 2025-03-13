@@ -47,8 +47,6 @@ send_curl_request(std::string endpoint, uint8_t type, std::string req_data) {
   }
 
   if (curl) {
-    // DEBUG
-    // std::clog << BLUE"[LOG]" << RESET" sending to endpoint: " << url << "\n";
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
@@ -124,8 +122,7 @@ void login(std::string username, std::string password) {
 
   access_token = resp_parsed["access_token"];
 
-  // DEBUG
-  std::cout << "access token: " << access_token << std::endl;
+
 }
 
 void refresh_access_token() {
@@ -142,9 +139,7 @@ void refresh_access_token() {
                   "token&refresh_token={}",
                   refresh_token);
 
-  // DEBUG
-  std::clog << "calling send_curl_request() with folowing req_data\n"
-            << req_data << std::endl;
+ 
   auto [response, http_code] = send_curl_request("api/login", POST, req_data);
   if (http_code != 200) {
     std::cerr << RED "[ERROR] " << RESET << http_code
@@ -176,10 +171,6 @@ json get_data_from_endpoint(std::string endpoint) {
   auto [response, http_code] = send_curl_request(endpoint, GET, req_data);
 
   if (http_code != 200) {
-    // DEBUG
-    std::clog << "Failed geting data from endpoint: " << endpoint
-              << " code: " << http_code << "\nrequest: " << req_data
-              << "\nresponse: " << response << std::endl;
     refresh_access_token();
     goto access_token_refreshed;
   }
