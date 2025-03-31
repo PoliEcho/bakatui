@@ -4,9 +4,13 @@
 #include "helper_funcs.h"
 #include "net.h"
 #include "types.h"
+#include <bits/chrono.h>
 #include <cstdint>
+#include <cstdio>
+#include <ctime>
 #include <curses.h>
 #include <cwchar>
+#include <iomanip>
 #include <iostream>
 #include <ncurses.h>
 #include <nlohmann/json.hpp>
@@ -15,6 +19,8 @@
 #include <string>
 #include <sys/types.h>
 #include <vector>
+
+
 
 using nlohmann::json;
 #define BOTTOM_PADDING 5
@@ -81,13 +87,18 @@ json *find_atom_by_indexes(json &resp_from_api, uint8_t day_index,
 }
 
 void timetable_page() {
-	const auto dateSelected = std::chrono::system_clock::now();
+	auto dateSelected = std::chrono::system_clock::now();
+  reload_for_new_week:
 	std::time_t date_time_t = std::chrono::system_clock::to_time_t(dateSelected);
  	std::tm local_time = *std::localtime(&date_time_t);
+  
+
 	std::stringstream date_stringstream;
 	date_stringstream << std::put_time(&local_time, "%Y-%m-%d");
+
 	std::string date_string = "date=" + date_stringstream.str();
   std::string endpoint = "api/3/timetable/actual";
+
   json resp_from_api =
       bakaapi::get_data_from_endpoint(endpoint, date_string);
 
@@ -253,7 +264,46 @@ void timetable_page() {
   }
   attron(COLOR_PAIR(COLOR_BLUE));
   mvprintw(LINES - 2, 0,
-           "Arrows/hjkl to select | ENTER to show info | F1 to exit");
+           "Arrows/hjkl to select | ENTER to show info | p/n to select weeks |F1 to exit");
+  {
+    std::tm end_week = local_time;
+std::tm start_week = local_time; 
+
+// Convert tm_wday (0-6) to API day format (1-7)
+int current_wday = (local_time.tm_wday == 0) ? 7 : local_time.tm_wday;
+
+// Get days of week from API (1-7 format where Monday is 1)
+uint8_t start_day = resp_from_api["Days"][0]["DayOfWeek"].get<uint8_t>();
+uint8_t end_day = resp_from_api["Days"][resp_from_api["Days"].size() - 1]["DayOfWeek"].get<uint8_t>();
+
+// Calculate days back to start day (handles week wraparound)
+int days_back = (current_wday >= start_day) 
+                ? (current_wday - start_day) 
+                : (current_wday + 7 - start_day);
+
+// Calculate days forward to end day (handles week wraparound)
+int days_forward = (current_wday <= end_day) 
+                  ? (end_day - current_wday) 
+                  : (end_day + 7 - current_wday);
+
+// Adjust dates
+start_week.tm_mday -= days_back;
+end_week.tm_mday += days_forward;
+
+// Normalize the dates
+std::mktime(&start_week);
+std::mktime(&end_week);
+
+// Format the dates as strings
+std::stringstream start_week_strstream, end_week_strstream;
+start_week_strstream << std::put_time(&start_week, "%d.%m.%Y");
+end_week_strstream << std::put_time(&end_week, "%d.%m.%Y");
+
+// kern. developer approved ↓↓
+mvprintw(LINES - 2, COLS - (start_week_strstream.str().length() + 3 + end_week_strstream.str().length()), 
+         "%s", (start_week_strstream.str() + " - " + end_week_strstream.str()).c_str());
+
+  }
   attroff(COLOR_PAIR(COLOR_BLUE));
 
   update_panels();
@@ -309,6 +359,14 @@ void timetable_page() {
     case 'l':
       selected_cell.x++;
       break;
+    case 'p':
+      dateSelected = dateSelected - std::chrono::days(7);
+      goto reload_for_new_week;
+    break;
+    case 'n':
+      dateSelected = dateSelected + std::chrono::days(7);
+      goto reload_for_new_week;
+    break;
     case 10: // ENTER
       json *atom = find_atom_by_indexes(resp_from_api, selected_cell.y,
                                         selected_cell.x, HourIdLookupTable);
