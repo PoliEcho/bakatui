@@ -162,11 +162,14 @@ void is_access_token_empty() {
 }
 
 // supports all endpoints that only require access_token
-json get_data_from_endpoint(std::string endpoint) {
+json get_data_from_endpoint(std::string &endpoint, std::string additional_data) {
   is_access_token_empty();
   access_token_refreshed:
   std::string req_data =
       std::format("Authorization=Bearer&access_token={}", access_token);
+  if(!additional_data.empty()) {
+    req_data.append(std::format("&{}", additional_data));
+  }
 
   auto [response, http_code] = send_curl_request(endpoint, GET, req_data);
 

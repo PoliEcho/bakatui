@@ -11,6 +11,7 @@
 #include <ncurses.h>
 #include <nlohmann/json.hpp>
 #include <panel.h>
+#include <sstream>
 #include <string>
 #include <sys/types.h>
 #include <vector>
@@ -80,11 +81,15 @@ json *find_atom_by_indexes(json &resp_from_api, uint8_t day_index,
 }
 
 void timetable_page() {
-  // DONT FORGET TO UNCOMMENT
+	const auto dateSelected = std::chrono::system_clock::now();
+	std::time_t date_time_t = std::chrono::system_clock::to_time_t(dateSelected);
+ 	std::tm local_time = *std::localtime(&date_time_t);
+	std::stringstream date_stringstream;
+	date_stringstream << std::put_time(&local_time, "%Y-%m-%d");
+	std::string date_string = "date=" + date_stringstream.str();
+  std::string endpoint = "api/3/timetable/actual";
   json resp_from_api =
-      bakaapi::get_data_from_endpoint("api/3/timetable/actual");
-  /*std::ifstream f("test-data/timetable.json");
-  json resp_from_api = json::parse(f);*/
+      bakaapi::get_data_from_endpoint(endpoint, date_string);
 
   // this may be unnecessary but i dont have enaugh data to test it
   // it sorts the hours by start time

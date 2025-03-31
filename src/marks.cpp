@@ -32,11 +32,11 @@ void win_show(WINDOW *win, wchar_t *label, int label_color, int width,
               int height, json marks_json, int SubjectIndex);
 
 void marks_page() {
-  // DONT FORGET TO UNCOMMENT
-  json resp_from_api = bakaapi::get_data_from_endpoint("api/3/marks");
-  // std::ifstream f("test-data/marks3.json");
-  // json resp_from_api = json::parse(f);
-
+  json resp_from_api;
+  {
+  std::string endpoint = "api/3/marks";
+  resp_from_api = bakaapi::get_data_from_endpoint(endpoint);
+  }
   WINDOW **my_wins;
   size_t size_my_wins = resp_from_api["Subjects"].size();
   my_wins = new (std::nothrow) WINDOW *[size_my_wins];

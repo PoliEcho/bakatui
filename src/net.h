@@ -11,6 +11,6 @@ extern CURL *curl;
 namespace bakaapi {
 void login(std::string username, std::string password);
 void refresh_access_token();
-json get_data_from_endpoint(std::string endpoint);
+json get_data_from_endpoint(std::string &endpoint, std::string data = "");
 } // namespace bakaapi
 #endif
