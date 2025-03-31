@@ -1,5 +1,6 @@
 #include "marks.h"
 #include "helper_funcs.h"
+#include "memory.h"
 #include "net.h"
 #include <algorithm>
 #include <cstddef>
@@ -12,6 +13,7 @@
 #include <nlohmann/json.hpp>
 #include <panel.h>
 #include <string>
+#include <vector>
 
 using nlohmann::json;
 
@@ -27,23 +29,26 @@ using nlohmann::json;
 
 #define DEFAULT_PADDING 4
 
+std::vector<allocation> marks_allocated;
+
 void init_wins(WINDOW **wins, int n, json marks_json);
 void win_show(WINDOW *win, wchar_t *label, int label_color, int width,
               int height, json marks_json, int SubjectIndex);
 
 void marks_page() {
+  current_allocated = &marks_allocated;
   json resp_from_api;
   {
-  std::string endpoint = "api/3/marks";
-  resp_from_api = bakaapi::get_data_from_endpoint(endpoint);
+    std::string endpoint = "api/3/marks";
+    resp_from_api = bakaapi::get_data_from_endpoint(endpoint);
   }
-  WINDOW **my_wins;
   size_t size_my_wins = resp_from_api["Subjects"].size();
-  my_wins = new (std::nothrow) WINDOW *[size_my_wins];
+  WINDOW **my_wins = new (std::nothrow) WINDOW *[size_my_wins];
+  marks_allocated.push_back({WINDOW_ARRAY, my_wins, size_my_wins});
 
-  PANEL **my_panels;
   size_t size_my_panels = resp_from_api["Subjects"].size();
-  my_panels = new (std::nothrow) PANEL *[size_my_panels];
+  PANEL **my_panels = new (std::nothrow) PANEL *[size_my_panels];
+  marks_allocated.push_back({PANEL_ARRAY, my_panels, size_my_panels});
 
   // trows compiler warning for some reason but cannot be removed
   PANEL *top;
@@ -66,7 +71,9 @@ void marks_page() {
 
   // store all original window position
   int *original_y = new int[size_my_wins];
+  marks_allocated.push_back({GENERIC_ARRAY, original_y, size_my_wins});
   int *original_x = new int[size_my_wins];
+  marks_allocated.push_back({GENERIC_ARRAY, original_x, size_my_wins});
   for (size_t i = 0; i < size_my_wins; ++i) {
     getbegyx(my_wins[i], original_y[i], original_x[i]);
   }
@@ -121,10 +128,7 @@ void marks_page() {
   // Cleanup
   endwin();
   clear();
-  delete[] my_wins;
-  delete[] my_panels;
-  delete[] original_y;
-  delete[] original_x;
+  delete_all(&marks_allocated);
 }
 
 /* Put all the windows */
@@ -153,7 +157,9 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
              wsub_name.c_str(), wsub_avg_s.c_str());
 
     size_t max_text_length = wcslen(label);
-    for (unsigned int j = 0; j < static_cast<unsigned int>(marks_json["Subjects"][i]["Marks"].size()); j++) {
+    for (unsigned int j = 0; j < static_cast<unsigned int>(
+                                     marks_json["Subjects"][i]["Marks"].size());
+         j++) {
       std::string caption =
           rm_tr_le_whitespace(marks_json["Subjects"][i]["Marks"][j]["Caption"]);
       std::string theme =
@@ -178,7 +184,10 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
       MaxHight = 0;
     }
 
-    if (static_cast<unsigned int>(marks_json["Subjects"][i]["Marks"].size()) * 2 + DEFAULT_PADDING > MaxHight) {
+    if (static_cast<unsigned int>(marks_json["Subjects"][i]["Marks"].size()) *
+                2 +
+            DEFAULT_PADDING >
+        MaxHight) {
       MaxHight =
           marks_json["Subjects"][i]["Marks"].size() * 2 + DEFAULT_PADDING;
     }
@@ -196,8 +205,9 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
 /* Show the window with a border and a label */
 void win_show(WINDOW *win, wchar_t *label, int label_color, int width,
               int height, json marks_json, int SubjectIndex) {
-  
-  // is the compiler smoking weed or something, why is it thinking starty is not used ??
+
+  // is the compiler smoking weed or something, why is it thinking starty is not
+  // used ??
   int startx, starty;
 
   wresize(win, height, width);

@@ -1,5 +1,7 @@
 #include "helper_funcs.h"
 #include "color.h"
+#include "main.h"
+#include "memory.h"
 #include "net.h"
 #include <codecvt>
 #include <csignal>
@@ -13,7 +15,9 @@
 #include <string>
 #include <termios.h>
 #include <unistd.h>
-#include "main.h"
+#include <vector>
+
+std::vector<allocation> *current_allocated;
 
 void safe_exit(int code) {
   switch (code) {
@@ -38,6 +42,7 @@ void safe_exit(int code) {
   default:
     break;
   }
+  delete_all(current_allocated);
 
   curl_easy_cleanup(curl);
   endwin();
@@ -152,9 +157,11 @@ void wprint_in_middle(WINDOW *win, int starty, int startx, int width,
   x = startx + (int)temp;
   wattron(win, color);
   if (mvwaddwstr(win, y, x, string) == ERR) {
-    if(config.verbose){
-    std::wcerr << RED"[ERROR]"<< RESET" wprint_in_middle failed to print " << string << "\n";
-  }}
+    if (config.verbose) {
+      std::wcerr << RED "[ERROR]" << RESET " wprint_in_middle failed to print "
+                 << string << "\n";
+    }
+  }
   wattroff(win, color);
   refresh();
 }

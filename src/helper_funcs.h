@@ -1,9 +1,13 @@
+#include "memory.h"
 #include <curses.h>
 #include <string>
+#include <vector>
 
 // header guard
 #ifndef _ba_hf_hg_
 #define _ba_hf_hg_
+
+extern std::vector<allocation> *current_allocated;
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
