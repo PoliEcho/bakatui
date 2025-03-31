@@ -21,7 +21,7 @@
 using nlohmann::json;
 
 // metods
-enum {
+enum metod {
   GET,
   POST,
 };
@@ -38,8 +38,8 @@ size_t WriteCallback(void *contents, size_t size, size_t nmemb,
   return totalSize;
 }
 
-std::tuple<std::string, int>
-send_curl_request(std::string endpoint, uint8_t type, std::string req_data) {
+std::tuple<std::string, int> send_curl_request(std::string endpoint, metod type,
+                                               std::string req_data) {
   std::string response;
   std::string url = baka_api_url + endpoint;
   if (type == GET) {
@@ -121,13 +121,11 @@ void login(std::string username, std::string password) {
   json resp_parsed = json::parse(response);
 
   access_token = resp_parsed["access_token"];
-
-
 }
 
 void refresh_access_token() {
-  if(config.verbose) {
-  std::clog << "refreshing access token please wait...\n";
+  if (config.verbose) {
+    std::clog << "refreshing access token please wait...\n";
   }
 
   json authfile_parsed = json::parse(SoRAuthFile(false, ""));
@@ -139,7 +137,6 @@ void refresh_access_token() {
                   "token&refresh_token={}",
                   refresh_token);
 
- 
   auto [response, http_code] = send_curl_request("api/login", POST, req_data);
   if (http_code != 200) {
     std::cerr << RED "[ERROR] " << RESET << http_code
@@ -162,12 +159,13 @@ void is_access_token_empty() {
 }
 
 // supports all endpoints that only require access_token
-json get_data_from_endpoint(std::string &endpoint, std::string additional_data) {
+json get_data_from_endpoint(std::string &endpoint,
+                            std::string additional_data) {
   is_access_token_empty();
-  access_token_refreshed:
+access_token_refreshed:
   std::string req_data =
       std::format("Authorization=Bearer&access_token={}", access_token);
-  if(!additional_data.empty()) {
+  if (!additional_data.empty()) {
     req_data.append(std::format("&{}", additional_data));
   }
 
