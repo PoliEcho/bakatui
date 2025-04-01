@@ -5,6 +5,9 @@
 #include <panel.h>
 
 void delete_all(std::vector<allocation> *allocated) {
+  if (allocated == nullptr) {
+	  return;
+  }
   for (long long i = allocated->size() - 1; i >= 0; i--) {
     switch (allocated->at(i).type) {
     case WINDOW_ARRAY: {
