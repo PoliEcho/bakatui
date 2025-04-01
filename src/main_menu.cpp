@@ -13,7 +13,7 @@
 
 wchar_t *choices[] = {
     L"login",    L"Marks",   L"timetable", L"Komens",
-    L"Homework", L"Absence", L"Exit",      (wchar_t *)NULL,
+    L"Homework", L"Absence", L"Exit", nullptr,
 };
 void (*choicesFuncs[])() = {nullptr, marks_page, timetable_page, nullptr,
                             nullptr, nullptr,    nullptr,        nullptr};
@@ -79,15 +79,14 @@ void main_menu() {
   while ((c = getch()) != KEY_F(1)) {
     switch (c) {
     case KEY_DOWN:
-      menu_driver(my_menu, REQ_DOWN_ITEM);
-      break;
-    case KEY_UP:
-      menu_driver(my_menu, REQ_UP_ITEM);
-      break;
     case KEY_NPAGE:
+    case 'j':
       menu_driver(my_menu, REQ_DOWN_ITEM);
       break;
-    case KEY_PPAGE:
+
+    case KEY_UP:
+    case KEY_PPAGE: 
+    case 'k':
       menu_driver(my_menu, REQ_UP_ITEM);
       break;
     case 10: // ENTER
