@@ -100,7 +100,8 @@ reload_for_new_week:
   std::string date_string = "date=" + date_stringstream.str();
   std::string endpoint = "api/3/timetable/actual";
 
-  json resp_from_api = bakaapi::get_data_from_endpoint(endpoint, date_string);
+  json resp_from_api =
+      bakaapi::get_data_from_endpoint(endpoint, GET, date_string);
 
   // this may be unnecessary but i dont have enaugh data to test it
   // it sorts the hours by start time

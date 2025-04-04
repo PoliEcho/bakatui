@@ -40,7 +40,7 @@ void marks_page() {
   json resp_from_api;
   {
     std::string endpoint = "api/3/marks";
-    resp_from_api = bakaapi::get_data_from_endpoint(endpoint);
+    resp_from_api = bakaapi::get_data_from_endpoint(endpoint, GET);
   }
   size_t size_my_wins = resp_from_api["Subjects"].size();
   WINDOW **my_wins = new (std::nothrow) WINDOW *[size_my_wins];

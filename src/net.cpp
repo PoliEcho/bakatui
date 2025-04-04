@@ -20,12 +20,6 @@
 
 using nlohmann::json;
 
-// metods
-enum metod {
-  GET,
-  POST,
-};
-
 std::string access_token;
 
 CURL *curl = curl_easy_init();
@@ -159,7 +153,7 @@ void is_access_token_empty() {
 }
 
 // supports all endpoints that only require access_token
-json get_data_from_endpoint(std::string &endpoint,
+json get_data_from_endpoint(std::string &endpoint, metod metod,
                             std::string additional_data) {
   is_access_token_empty();
 access_token_refreshed:
