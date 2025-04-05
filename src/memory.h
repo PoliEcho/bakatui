@@ -3,13 +3,16 @@
 #define _ba_me_hg_
 
 #include <cstddef>
+#include <menu.h>
 #include <vector>
 enum AllocationType {
   WINDOW_ARRAY,
   PANEL_ARRAY,
+  ITEM_ARRAY,
   GENERIC_ARRAY,
   WINDOW_TYPE,
   PANEL_TYPE,
+  MENU_TYPE,
   GENERIC_TYPE
 };
 

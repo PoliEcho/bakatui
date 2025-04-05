@@ -27,8 +27,8 @@ void wprint_in_middle(WINDOW *win, int starty, int startx, int width,
 std::wstring wrm_tr_le_whitespace(const std::wstring &s);
 
 // Conversion utilities
-char *wchar_to_char(wchar_t *src);
-wchar_t *char_to_wchar(char *src);
+char *wchar_to_char(const wchar_t *src);
+wchar_t *char_to_wchar(const char *src);
 
 std::wstring string_to_wstring(const std::string &str);
 std::string wstring_to_string(const std::wstring &wstr);

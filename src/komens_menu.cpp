@@ -1,20 +1,18 @@
-#include "helper_funcs.h"
 #include "komens_menu.h"
-#include "marks.h"
+#include "helper_funcs.h"
+#include "komens.h"
 #include "net.h"
-#include "timetable.h"
 #include <cstdlib>
 #include <cstring>
 #include <curses.h>
 #include <menu.h>
 
-void main_menu() {
+void komens_menu() {
   wchar_t *choices[] = {
-      L"login",    L"Marks",   L"timetable", L"Komens",
-      L"Homework", L"Absence", L"Exit",      nullptr,
+      L"received", L"send", L"noticeboard", L"Exit", nullptr,
   };
-  void (*choicesFuncs[])() = {nullptr, marks_page, timetable_page, komens_menu,
-                              nullptr, nullptr,    nullptr,        nullptr};
+  void (*choicesFuncs[])() = {komens_page, nullptr, nullptr, nullptr, nullptr};
+
   ITEM **my_items;
   int c;
   MENU *my_menu;
@@ -56,7 +54,7 @@ void main_menu() {
   /* Print a border around the main window and print a title */
   box(my_menu_win, 0, 0);
 
-  wprint_in_middle(my_menu_win, 1, 0, 40, L"Main Menu", COLOR_PAIR(1));
+  wprint_in_middle(my_menu_win, 1, 0, 40, L"Komens Menu", COLOR_PAIR(1));
   mvwaddch(my_menu_win, 2, 0, ACS_LTEE);
   mvwhline(my_menu_win, 2, 1, ACS_HLINE, 38);
   mvwaddch(my_menu_win, 2, 39, ACS_RTEE);

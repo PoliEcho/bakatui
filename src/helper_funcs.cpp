@@ -199,7 +199,7 @@ std::wstring wrm_tr_le_whitespace(const std::wstring &s) {
 }
 
 // Conversion utilities
-char *wchar_to_char(wchar_t *src) {
+char *wchar_to_char(const wchar_t *src) {
   if (!src)
     return nullptr;
 
@@ -210,7 +210,7 @@ char *wchar_to_char(wchar_t *src) {
   return dest;
 }
 
-wchar_t *char_to_wchar(char *src) {
+wchar_t *char_to_wchar(const char *src) {
   if (!src)
     return nullptr;
 
