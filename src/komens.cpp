@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <curses.h>
+#include <cwchar>
 #include <fstream>
 #include <iostream>
 #include <menu.h>
@@ -40,24 +41,41 @@ void komens_page() {
   ITEM **komens_items = new ITEM *[num_of_komens + 1];
   komens_allocated.push_back({ITEM_ARRAY, komens_items, num_of_komens});
 
+  char **title_bufs = new char *[num_of_komens];
+  char **name_bufs = new char *[num_of_komens];
+  char tmp_buf[1500];
   for (size_t i = 0; i < num_of_komens; i++) {
-    komens_items[i] = new_item(
-        resp_from_api["Messages"][i]["Title"].get<std::string>().c_str(),
-        resp_from_api["Messages"][i]["Sender"]["Name"]
-            .get<std::string>()
-            .c_str());
+    wcstombs(tmp_buf,
+             string_to_wstring(
+                 resp_from_api["Messages"][i]["Title"].get<std::string>())
+                 .c_str(),
+             sizeof(tmp_buf));
+    title_bufs[i] = new char[strlen(tmp_buf) + 1];
+    strlcpy(title_bufs[i], tmp_buf, strlen(tmp_buf));
+    wcstombs(
+        tmp_buf,
+        string_to_wstring(
+            resp_from_api["Messages"][i]["Sender"]["Name"].get<std::string>())
+            .c_str(),
+        sizeof(tmp_buf));
+
+    name_bufs[i] = new char[strlen(tmp_buf) + 1];
+    strlcpy(name_bufs[i], tmp_buf, strlen(tmp_buf));
+
+    komens_items[i] = new_item(title_bufs[i], name_bufs[i]);
   }
   komens_items[num_of_komens] = nullptr;
 
   MENU *komens_choise_menu = new_menu(komens_items);
   komens_allocated.push_back({MENU_TYPE, komens_choise_menu, 0});
 
-  WINDOW *komens_choise_menu_win = newwin(20, 40, 4, 4);
+  WINDOW *komens_choise_menu_win = newwin(40, 80, 4, 4);
   komens_allocated.push_back({WINDOW_TYPE, komens_choise_menu_win, 0});
 
   set_menu_win(komens_choise_menu, komens_choise_menu_win);
-  set_menu_sub(komens_choise_menu, derwin(komens_choise_menu_win, 8, 38, 3, 1));
-  set_menu_format(komens_choise_menu, 7, 1);
+  set_menu_sub(komens_choise_menu,
+               derwin(komens_choise_menu_win, 30, 78, 3, 1));
+  set_menu_format(komens_choise_menu, 29, 1);
 
   set_menu_mark(komens_choise_menu, " * ");
 
@@ -71,11 +89,11 @@ void komens_page() {
   post_menu(komens_choise_menu);
   wrefresh(komens_choise_menu_win);
 
-  attron(COLOR_PAIR(2));
+  attron(COLOR_PAIR(COLOR_BLUE));
   mvprintw(LINES - 2, 0,
            "Use PageUp and PageDown to scoll down or up a page of items");
   mvprintw(LINES - 1, 0, "Arrow Keys to navigate (F1 to Exit)");
-  attroff(COLOR_PAIR(2));
+  attroff(COLOR_PAIR(COLOR_BLUE));
   refresh();
 
   int c;
