@@ -2,7 +2,6 @@
 #include "helper_funcs.h"
 #include "memory.h"
 #include <cstddef>
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <curses.h>
@@ -42,27 +41,28 @@ void komens_page() {
   ITEM **komens_items = new ITEM *[num_of_komens + 1];
   komens_allocated.push_back({ITEM_ARRAY, komens_items, num_of_komens});
 
-  char **komens_bufs = new char *[num_of_komens];
-  char title_buf[1500];
-  char name_buf[1500];
+  char **title_bufs = new char *[num_of_komens];
+  char **name_bufs = new char *[num_of_komens];
+  char tmp_buf[1500];
   for (size_t i = 0; i < num_of_komens; i++) {
-    wcstombs(title_buf,
+    wcstombs(tmp_buf,
              string_to_wstring(
                  resp_from_api["Messages"][i]["Title"].get<std::string>())
                  .c_str(),
-             sizeof(title_buf));
+             sizeof(tmp_buf));
+    title_bufs[i] = new char[strlen(tmp_buf) + 1];
+    strlcpy(title_bufs[i], tmp_buf, strlen(tmp_buf));
     wcstombs(
-        name_buf,
+        tmp_buf,
         string_to_wstring(
             resp_from_api["Messages"][i]["Sender"]["Name"].get<std::string>())
             .c_str(),
-        sizeof(name_buf));
+        sizeof(tmp_buf));
 
-    komens_bufs[i] = new char[strlen(title_buf) + strlen(name_buf) + 2];
-    snprintf(komens_bufs[i], strlen(title_buf) + strlen(name_buf) + 1, "%s\n%s",
-             title_buf, name_buf);
+    name_bufs[i] = new char[strlen(tmp_buf) + 1];
+    strlcpy(name_bufs[i], tmp_buf, strlen(tmp_buf));
 
-    komens_items[i] = new_item(komens_bufs[i], "");
+    komens_items[i] = new_item(title_bufs[i], name_bufs[i]);
   }
   komens_items[num_of_komens] = nullptr;
 
