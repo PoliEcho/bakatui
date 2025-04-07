@@ -51,7 +51,7 @@ void komens_page() {
                  .c_str(),
              sizeof(tmp_buf));
     title_bufs[i] = new char[strlen(tmp_buf) + 1];
-    strlcpy(title_bufs[i], tmp_buf, strlen(tmp_buf));
+    strlcpy(title_bufs[i], tmp_buf, strlen(tmp_buf) + 1);
     wcstombs(
         tmp_buf,
         string_to_wstring(
@@ -60,7 +60,7 @@ void komens_page() {
         sizeof(tmp_buf));
 
     name_bufs[i] = new char[strlen(tmp_buf) + 1];
-    strlcpy(name_bufs[i], tmp_buf, strlen(tmp_buf));
+    strlcpy(name_bufs[i], tmp_buf, strlen(tmp_buf) + 1);
 
     komens_items[i] = new_item(title_bufs[i], name_bufs[i]);
   }
@@ -69,13 +69,13 @@ void komens_page() {
   MENU *komens_choise_menu = new_menu(komens_items);
   komens_allocated.push_back({MENU_TYPE, komens_choise_menu, 0});
 
-  WINDOW *komens_choise_menu_win = newwin(40, 80, 4, 4);
+  WINDOW *komens_choise_menu_win = newwin(40, 100, 4, 4);
   komens_allocated.push_back({WINDOW_TYPE, komens_choise_menu_win, 0});
 
   set_menu_win(komens_choise_menu, komens_choise_menu_win);
   set_menu_sub(komens_choise_menu,
-               derwin(komens_choise_menu_win, 30, 78, 3, 1));
-  set_menu_format(komens_choise_menu, 29, 1);
+               derwin(komens_choise_menu_win, 30, 98, 3, 1));
+  set_menu_format(komens_choise_menu, 35, 1);
 
   set_menu_mark(komens_choise_menu, " * ");
 
