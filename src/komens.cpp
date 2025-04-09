@@ -7,8 +7,6 @@
 #include <cstring>
 #include <curses.h>
 #include <cwchar>
-#include <fstream>
-#include <iostream>
 #include <menu.h>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -23,14 +21,18 @@ std::vector<allocation> komens_allocated;
 
 void insert_content(WINDOW *content_window, size_t i, json &resp_from_api);
 
-void komens_page() {
+void komens_page(koment_type type) {
   current_allocated = &komens_allocated;
   json resp_from_api;
   {
     /*std::ifstream f("test-data/komens.json");
     resp_from_api = json::parse(f);
     f.close();*/
-    const std::string endpoint = "/api/3/komens/messages/received";
+    const char *types[] = {"/api/3/komens/messages/received",
+                           "/api/3/komens/message",
+                           "/api/3/komens/messages/noticeboard"};
+
+    const std::string endpoint = types[type];
     resp_from_api = bakaapi::get_data_from_endpoint(endpoint, POST);
   }
 
@@ -94,7 +96,7 @@ void komens_page() {
 
       komens_items[i] = new_item(title_bufs[i], name_bufs[i]);
     }
-    max_item_lenght = max_title_lenght + max_name_lenght;
+    max_item_lenght = 3 + max_title_lenght + 1 + max_name_lenght;
   }
   komens_items[num_of_komens] = nullptr;
 

@@ -11,7 +11,6 @@ void komens_menu() {
   wchar_t *choices[] = {
       L"received", L"send", L"noticeboard", L"Exit", nullptr,
   };
-  void (*choicesFuncs[])() = {komens_page, nullptr, nullptr, nullptr, nullptr};
 
   ITEM **my_items;
   int c;
@@ -88,7 +87,7 @@ void komens_menu() {
       if (item_index(current_item(my_menu)) == n_choices - 1) {
         goto close_menu;
       }
-      choicesFuncs[item_index(current_item(my_menu))]();
+      komens_page(static_cast<koment_type>(item_index(current_item(my_menu))));
       pos_menu_cursor(my_menu);
       refresh();
       wrefresh(my_menu_win);

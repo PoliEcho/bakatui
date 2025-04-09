@@ -1,4 +1,9 @@
 #ifndef _ba_ko_hg_
 #define _ba_ko_hg_
-void komens_page();
+enum koment_type {
+  RECEIVED,
+  SEND,
+  NOTICEBOARD,
+};
+void komens_page(koment_type type);
 #endif
