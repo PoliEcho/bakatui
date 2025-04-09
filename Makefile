@@ -29,7 +29,7 @@ $(BIN_PATH)/bakatui: $(OBJ_FILES)
 	$(CPPC) $(CPPC_FLAGS) $^ -o $@
 
 
-$(OBJ_PATH)/%.o: $(SRC_PATH)/%.cpp
+$(OBJ_PATH)/%.o: $(SRC_PATH)/%.cpp $(SRC_PATH)/%.h
 	$(CPPC) $(CPPC_FLAGS) -c $< -o $@
 
 

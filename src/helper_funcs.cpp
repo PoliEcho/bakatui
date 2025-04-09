@@ -3,6 +3,7 @@
 #include "main.h"
 #include "memory.h"
 #include "net.h"
+#include <algorithm>
 #include <codecvt>
 #include <csignal>
 #include <curses.h>
@@ -12,6 +13,7 @@
 #include <iostream>
 #include <locale>
 #include <panel.h>
+#include <regex>
 #include <string>
 #include <termios.h>
 #include <unistd.h>
@@ -241,4 +243,30 @@ void move_panel_relative(PANEL *panel, int dy, int dx) {
   int new_x = x + dx;
 
   move_panel(panel, new_y, new_x);
+}
+
+std::string html_to_string(std::string html) {
+  { // fix new lines
+    const std::string search = "<br />";
+    const std::string replace = "\n";
+
+    size_t pos = 0;
+    while ((pos = html.find(search, pos)) != std::string::npos) {
+      html.replace(pos, search.length(), replace);
+      pos += replace.length();
+    }
+  }
+
+  {
+    std::regex linkPattern("<a\\s+href=[\"'](.*?)[\"'](.*?)>(.*?)</a>");
+    html = std::regex_replace(html, linkPattern,
+                              "\033]8;;$1\033\\$3\033]8;;\033\\");
+  }
+
+  {
+    std::regex tag("<[^>]*>");
+    html = std::regex_replace(html, tag, "");
+  }
+
+  return html;
 }

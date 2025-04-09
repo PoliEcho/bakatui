@@ -153,7 +153,7 @@ void is_access_token_empty() {
 }
 
 // supports all endpoints that only require access_token
-json get_data_from_endpoint(std::string &endpoint, metod metod,
+json get_data_from_endpoint(const std::string &endpoint, metod metod,
                             std::string additional_data) {
   is_access_token_empty();
 access_token_refreshed:
@@ -163,7 +163,7 @@ access_token_refreshed:
     req_data.append(std::format("&{}", additional_data));
   }
 
-  auto [response, http_code] = send_curl_request(endpoint, GET, req_data);
+  auto [response, http_code] = send_curl_request(endpoint, metod, req_data);
 
   if (http_code != 200) {
     refresh_access_token();
