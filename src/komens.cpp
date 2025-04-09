@@ -29,7 +29,7 @@ void komens_page(koment_type type) {
     resp_from_api = json::parse(f);
     f.close();*/
     const char *types[] = {"/api/3/komens/messages/received",
-                           "/api/3/komens/message",
+                           "/api/3/komens/messages/sent",
                            "/api/3/komens/messages/noticeboard"};
 
     const std::string endpoint = types[type];

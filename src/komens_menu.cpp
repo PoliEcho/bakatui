@@ -9,7 +9,7 @@
 
 void komens_menu() {
   wchar_t *choices[] = {
-      L"received", L"send", L"noticeboard", L"Exit", nullptr,
+      L"received", L"sent", L"noticeboard", L"Exit", nullptr,
   };
 
   ITEM **my_items;
