@@ -2,24 +2,31 @@
 #include "helper_funcs.h"
 #include "memory.h"
 #include "net.h"
+#include "types.h"
+#include <cmath>
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <curses.h>
 #include <cwchar>
 #include <menu.h>
+#include <ncurses.h>
 #include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 
-#define WIN_HIGHT 40
+#define MAIN_WIN_PROPORTION 0.714f
+
+#define MAIN_WIN_HIGHT (roundf(LINES * MAIN_WIN_PROPORTION))
+
 #define DEFAULT_OFSET 4
 
 using nlohmann::json;
 
 std::vector<allocation> komens_allocated;
 
-void insert_content(WINDOW *content_window, size_t i, json &resp_from_api);
+void insert_content(WINDOW *content_win, WINDOW *attachment_win, size_t i,
+                    json &resp_from_api);
 
 void komens_page(koment_type type) {
   current_allocated = &komens_allocated;
@@ -48,9 +55,13 @@ void komens_page(koment_type type) {
   for (uint8_t i = 0; i < 8; i++) {
     init_pair(i, i, COLOR_BLACK);
   }
+
+  complete_menu komens_choise_menu;
+
   size_t num_of_komens = resp_from_api["Messages"].size();
-  ITEM **komens_items = new ITEM *[num_of_komens + 1];
-  komens_allocated.push_back({ITEM_ARRAY, komens_items, num_of_komens});
+  komens_choise_menu.items = new ITEM *[num_of_komens + 1];
+  komens_allocated.push_back(
+      {ITEM_ARRAY, komens_choise_menu.items, num_of_komens});
 
   char **title_bufs = new char *[num_of_komens];
   char **name_bufs = new char *[num_of_komens];
@@ -94,46 +105,48 @@ void komens_page(koment_type type) {
       name_bufs[i] = new char[strlen(tmp_buf) + 1];
       strlcpy(name_bufs[i], tmp_buf, strlen(tmp_buf) + 1);
 
-      komens_items[i] = new_item(title_bufs[i], name_bufs[i]);
+      komens_choise_menu.items[i] = new_item(title_bufs[i], name_bufs[i]);
     }
     max_item_lenght = 3 + max_title_lenght + 1 + max_name_lenght;
   }
-  komens_items[num_of_komens] = nullptr;
+  komens_choise_menu.items[num_of_komens] = nullptr;
 
-  MENU *komens_choise_menu = new_menu(komens_items);
-  komens_allocated.push_back({MENU_TYPE, komens_choise_menu, 1});
+  komens_choise_menu.menu = new_menu(komens_choise_menu.items);
+  komens_allocated.push_back({MENU_TYPE, komens_choise_menu.menu, 1});
 
-  WINDOW *komens_choise_menu_win =
-      newwin(WIN_HIGHT, max_item_lenght + 1, DEFAULT_OFSET, DEFAULT_OFSET);
-  komens_allocated.push_back({WINDOW_TYPE, komens_choise_menu_win, 1});
+  komens_choise_menu.win =
+      newwin(MAIN_WIN_HIGHT, max_item_lenght + 1, DEFAULT_OFSET, DEFAULT_OFSET);
+  komens_allocated.push_back({WINDOW_TYPE, komens_choise_menu.win, 1});
 
-  set_menu_win(komens_choise_menu, komens_choise_menu_win);
-  set_menu_sub(komens_choise_menu,
-               derwin(komens_choise_menu_win, WIN_HIGHT - 10, max_item_lenght,
-                      DEFAULT_OFSET - 1, DEFAULT_OFSET - 3));
-  set_menu_format(komens_choise_menu, WIN_HIGHT - 5, 1);
+  set_menu_win(komens_choise_menu.menu, komens_choise_menu.win);
+  set_menu_sub(komens_choise_menu.menu,
+               derwin(komens_choise_menu.win, MAIN_WIN_HIGHT - 10,
+                      max_item_lenght, DEFAULT_OFSET - 1, DEFAULT_OFSET - 3));
+  set_menu_format(komens_choise_menu.menu, MAIN_WIN_HIGHT - 5, 1);
 
-  set_menu_mark(komens_choise_menu, " * ");
+  set_menu_mark(komens_choise_menu.menu, " * ");
 
-  box(komens_choise_menu_win, 0, 0);
+  box(komens_choise_menu.win, 0, 0);
 
-  wprint_in_middle(komens_choise_menu_win, 1, 0, max_item_lenght, L"Komens",
+  wprint_in_middle(komens_choise_menu.win, 1, 0, max_item_lenght, L"Komens",
                    COLOR_PAIR(1));
-  mvwaddch(komens_choise_menu_win, 2, 0, ACS_LTEE);
-  mvwhline(komens_choise_menu_win, 2, 1, ACS_HLINE, max_item_lenght - 1);
-  mvwaddch(komens_choise_menu_win, 2, max_item_lenght, ACS_RTEE);
+  mvwaddch(komens_choise_menu.win, 2, 0, ACS_LTEE);
+  mvwhline(komens_choise_menu.win, 2, 1, ACS_HLINE, max_item_lenght - 1);
+  mvwaddch(komens_choise_menu.win, 2, max_item_lenght, ACS_RTEE);
 
-  post_menu(komens_choise_menu);
-  wrefresh(komens_choise_menu_win);
+  post_menu(komens_choise_menu.menu);
+  wrefresh(komens_choise_menu.win);
 
-  WINDOW *content_window =
-      newwin(WIN_HIGHT, COLS - max_item_lenght - DEFAULT_OFSET - 1,
+  WINDOW *content_win =
+      newwin(MAIN_WIN_HIGHT, COLS - max_item_lenght - DEFAULT_OFSET - 1,
              DEFAULT_OFSET, DEFAULT_OFSET + max_item_lenght + 1);
-  komens_allocated.push_back({WINDOW_TYPE, content_window, 1});
-  box(content_window, 0, 0);
-  insert_content(content_window, item_index(current_item(komens_choise_menu)),
+  komens_allocated.push_back({WINDOW_TYPE, content_win, 1});
+
+  WINDOW *attachment_win = newwin(1, 1, LINES, COLS);
+
+  insert_content(content_win, attachment_win,
+                 item_index(current_item(komens_choise_menu.menu)),
                  resp_from_api);
-  wrefresh(content_window);
 
   attron(COLOR_PAIR(COLOR_BLUE));
   mvprintw(LINES - 2, 0,
@@ -148,25 +161,94 @@ void komens_page(koment_type type) {
     case KEY_DOWN:
     case KEY_NPAGE:
     case 'j':
-      menu_driver(komens_choise_menu, REQ_DOWN_ITEM);
+      menu_driver(komens_choise_menu.menu, REQ_DOWN_ITEM);
       break;
 
     case KEY_UP:
     case KEY_PPAGE:
     case 'k':
-      menu_driver(komens_choise_menu, REQ_UP_ITEM);
+      menu_driver(komens_choise_menu.menu, REQ_UP_ITEM);
       break;
     }
-    insert_content(content_window, item_index(current_item(komens_choise_menu)),
+    insert_content(content_win, attachment_win,
+                   item_index(current_item(komens_choise_menu.menu)),
                    resp_from_api);
-    wrefresh(content_window);
-    wrefresh(komens_choise_menu_win);
+    wrefresh(komens_choise_menu.win);
   }
   delete_all(&komens_allocated);
 }
 
-void insert_content(WINDOW *content_window, size_t i, json &resp_from_api) {
-  wclear(content_window);
-  mvwprintw(content_window, 0, 0, "%s",
+void insert_content(WINDOW *content_win, WINDOW *attachment_win, size_t i,
+                    json &resp_from_api) {
+  wclear(content_win);
+  mvwprintw(content_win, 0, 0, "%s",
             html_to_string(resp_from_api.at("Messages")[i]["Text"]).c_str());
+  wrefresh(content_win);
+  if (!resp_from_api.at("Messages")[i]["Attachments"].empty()) {
+
+    size_t max_item_lenght = 0;
+    {
+      size_t max_name_lenght = 0;
+      size_t max_size_lenght = 0;
+      size_t tmp_lenght;
+
+      for (size_t j = 0;
+           j < resp_from_api.at("Messages")[i]["Attachments"].size(); j++) {
+        tmp_lenght = resp_from_api.at("Messages")[i]["Attachments"][j]["Name"]
+                         .get<std::string>()
+                         .length();
+        if (tmp_lenght > max_name_lenght) {
+          max_name_lenght = tmp_lenght;
+        }
+
+        tmp_lenght =
+            std::to_string(
+                resp_from_api.at("Messages")[i]["Attachments"][j]["Size"]
+                    .get<size_t>())
+                .length();
+        if (tmp_lenght > max_size_lenght) {
+          max_size_lenght = tmp_lenght;
+        }
+      }
+
+      max_item_lenght = 3 + max_name_lenght + 1 + max_size_lenght;
+    }
+
+    mvwin(attachment_win, MAIN_WIN_HIGHT + DEFAULT_OFSET + 1,
+          COLS - max_item_lenght - 2);
+    wresize(attachment_win, LINES - (MAIN_WIN_HIGHT + DEFAULT_OFSET + 1),
+            max_item_lenght + 2);
+
+    wborder(attachment_win, 0, ' ', 0, 0, 0, ACS_HLINE, 0, ACS_HLINE);
+    print_in_middle(attachment_win, 0, 0, max_item_lenght + 2, "Attachments",
+                    COLOR_RED);
+    for (size_t j = 0;
+         j < resp_from_api.at("Messages")[i]["Attachments"].size(); j++) {
+
+      mvwprintw(attachment_win, j + 1, 2, "%s %s",
+                resp_from_api.at("Messages")[i]["Attachments"][j]["Name"]
+                    .get<std::string>()
+                    .c_str(),
+                std::to_string(
+                    resp_from_api.at("Messages")[i]["Attachments"][j]["Size"]
+                        .get<size_t>())
+                    .c_str());
+
+      wattron(attachment_win, COLOR_PAIR(COLOR_MAGENTA));
+      mvwprintw(attachment_win, j + 1, 0, "%zu>", j + 1);
+      wattroff(attachment_win, COLOR_PAIR(COLOR_MAGENTA));
+    }
+    { // remove duplicating spaces
+      unsigned short attachment_win_top, attachment_win_left,
+          attachment_win_height, attachment_win_width;
+      getbegyx(attachment_win, attachment_win_top, attachment_win_left);
+      getmaxyx(attachment_win, attachment_win_height, attachment_win_width);
+
+      mvvline(attachment_win_top, attachment_win_left - 1, ' ',
+              attachment_win_height);
+    }
+    refresh();
+
+    wrefresh(attachment_win);
+  }
 }

@@ -3,6 +3,7 @@
 #include "marks.h"
 #include "net.h"
 #include "timetable.h"
+#include "types.h"
 #include <cstdlib>
 #include <cstring>
 #include <curses.h>
@@ -15,10 +16,10 @@ void main_menu() {
   };
   void (*choicesFuncs[])() = {nullptr, marks_page, timetable_page, komens_menu,
                               nullptr, nullptr,    nullptr,        nullptr};
-  ITEM **my_items;
+
+  complete_menu main_menu;
+
   int c;
-  MENU *my_menu;
-  WINDOW *my_menu_win;
   int n_choices, i;
 
   /* Initialize curses */
@@ -33,37 +34,37 @@ void main_menu() {
 
   /* Create items */
   n_choices = ARRAY_SIZE(choices);
-  my_items = (ITEM **)calloc(n_choices, sizeof(ITEM *));
+  main_menu.items = (ITEM **)calloc(n_choices, sizeof(ITEM *));
   for (i = 0; i < n_choices; ++i)
-    my_items[i] =
+    main_menu.items[i] =
         new_item(wchar_to_char(choices[i]), wchar_to_char(choices[i]));
 
   /* Crate menu */
-  my_menu = new_menu((ITEM **)my_items);
+  main_menu.menu = new_menu((ITEM **)main_menu.items);
 
   /* Create the window to be associated with the menu */
-  my_menu_win = newwin(12, 40, 4, 4);
-  keypad(my_menu_win, TRUE);
+  main_menu.win = newwin(12, 40, 4, 4);
+  keypad(main_menu.win, TRUE);
 
   /* Set main window and sub window */
-  set_menu_win(my_menu, my_menu_win);
-  set_menu_sub(my_menu, derwin(my_menu_win, 8, 38, 3, 1));
-  set_menu_format(my_menu, 7, 1);
+  set_menu_win(main_menu.menu, main_menu.win);
+  set_menu_sub(main_menu.menu, derwin(main_menu.win, 8, 38, 3, 1));
+  set_menu_format(main_menu.menu, 7, 1);
 
   /* Set menu mark to the string " * " */
-  set_menu_mark(my_menu, " * ");
+  set_menu_mark(main_menu.menu, " * ");
 
   /* Print a border around the main window and print a title */
-  box(my_menu_win, 0, 0);
+  box(main_menu.win, 0, 0);
 
-  wprint_in_middle(my_menu_win, 1, 0, 40, L"Main Menu", COLOR_PAIR(1));
-  mvwaddch(my_menu_win, 2, 0, ACS_LTEE);
-  mvwhline(my_menu_win, 2, 1, ACS_HLINE, 38);
-  mvwaddch(my_menu_win, 2, 39, ACS_RTEE);
+  wprint_in_middle(main_menu.win, 1, 0, 40, L"Main Menu", COLOR_PAIR(1));
+  mvwaddch(main_menu.win, 2, 0, ACS_LTEE);
+  mvwhline(main_menu.win, 2, 1, ACS_HLINE, 38);
+  mvwaddch(main_menu.win, 2, 39, ACS_RTEE);
 
   /* Post the menu */
-  post_menu(my_menu);
-  wrefresh(my_menu_win);
+  post_menu(main_menu.menu);
+  wrefresh(main_menu.win);
 
   attron(COLOR_PAIR(2));
   mvprintw(LINES - 2, 0,
@@ -77,33 +78,33 @@ void main_menu() {
     case KEY_DOWN:
     case KEY_NPAGE:
     case 'j':
-      menu_driver(my_menu, REQ_DOWN_ITEM);
+      menu_driver(main_menu.menu, REQ_DOWN_ITEM);
       break;
 
     case KEY_UP:
     case KEY_PPAGE:
     case 'k':
-      menu_driver(my_menu, REQ_UP_ITEM);
+      menu_driver(main_menu.menu, REQ_UP_ITEM);
       break;
     case 10: // ENTER
       clear();
-      if (item_index(current_item(my_menu)) == n_choices - 1) {
+      if (item_index(current_item(main_menu.menu)) == n_choices - 1) {
         goto close_menu;
       }
-      choicesFuncs[item_index(current_item(my_menu))]();
-      pos_menu_cursor(my_menu);
+      choicesFuncs[item_index(current_item(main_menu.menu))]();
+      pos_menu_cursor(main_menu.menu);
       refresh();
-      wrefresh(my_menu_win);
+      wrefresh(main_menu.win);
       break;
     }
-    wrefresh(my_menu_win);
+    wrefresh(main_menu.win);
   }
 close_menu:
 
   /* Unpost and free all the memory taken up */
-  unpost_menu(my_menu);
-  free_menu(my_menu);
+  unpost_menu(main_menu.menu);
+  free_menu(main_menu.menu);
   for (i = 0; i < n_choices; ++i)
-    free_item(my_items[i]);
+    free_item(main_menu.items[i]);
   endwin();
 }

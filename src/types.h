@@ -3,6 +3,7 @@
 #define _ba_ty_hg_
 
 #include <istream>
+#include <menu.h>
 struct Config {
   bool verbose = false;
   bool ignoressl = false;
@@ -142,6 +143,12 @@ struct SelectorType {
   SelectorType(int xArg, int yArg, int min_limit_x, int max_limit_x,
                int min_limit_y, int max_limit_y)
       : x(xArg, min_limit_x, max_limit_x), y(yArg, min_limit_y, max_limit_y) {}
+};
+
+struct complete_menu {
+  WINDOW *win;
+  ITEM **items;
+  MENU *menu;
 };
 
 #endif
