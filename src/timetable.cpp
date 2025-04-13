@@ -552,7 +552,8 @@ void draw_days(WINDOW **&day_windows, uint16_t cell_height, uint8_t num_of_days,
 }
 
 void draw_lessons(WINDOW **&lesson_windows, uint8_t num_of_columns,
-                  uint16_t cell_width, std::vector<uint8_t> &HourIdLookupTable,
+                  uint16_t cell_width,
+                  const std::vector<uint8_t> &HourIdLookupTable,
                   const json &resp_from_api) {
   for (uint8_t i = 0; i < num_of_columns; i++) {
     wborder(lesson_windows[i], 0, 0, ' ', 0, ACS_VLINE, ACS_VLINE, 0, 0);
@@ -597,7 +598,7 @@ void draw_lessons(WINDOW **&lesson_windows, uint8_t num_of_columns,
 void draw_cells(uint8_t num_of_columns, uint8_t num_of_days,
                 uint16_t cell_width, uint16_t cell_height,
                 std::vector<std::vector<WINDOW *>> &cells,
-                std::vector<uint8_t> &HourIdLookupTable,
+                const std::vector<uint8_t> &HourIdLookupTable,
                 const json &resp_from_api) {
   for (uint8_t i = 0; i < num_of_days; i++) {
     for (uint8_t j = 0; j < num_of_columns; j++) {
