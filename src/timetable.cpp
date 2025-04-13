@@ -32,16 +32,18 @@ const wchar_t *day_abriviations[] = {nullptr, L"Mo", L"Tu", L"We",
                                      L"Th",   L"Fr", L"Sa", L"Su"};
 
 void draw_days(WINDOW **&day_windows, uint16_t cell_height, uint8_t num_of_days,
-               json &resp_from_api);
+               const json &resp_from_api);
 
 void draw_lessons(WINDOW **&lesson_windows, uint8_t num_of_columns,
-                  uint16_t cell_width, std::vector<uint8_t> &HourIdLookupTable,
-                  json &resp_from_api);
+                  uint16_t cell_width,
+                  const std::vector<uint8_t> &HourIdLookupTable,
+                  const json &resp_from_api);
 
 void draw_cells(uint8_t num_of_columns, uint8_t num_of_days,
                 uint16_t cell_width, uint16_t cell_height,
                 std::vector<std::vector<WINDOW *>> &cells,
-                std::vector<uint8_t> &HourIdLookupTable, json &resp_from_api);
+                const std::vector<uint8_t> &HourIdLookupTable,
+                const json &resp_from_api);
 
 uint8_t hour_id_to_index(const std::vector<uint8_t> &HourIdLookupTable,
                          uint8_t id) {
@@ -53,8 +55,8 @@ uint8_t hour_id_to_index(const std::vector<uint8_t> &HourIdLookupTable,
   return 0;
 }
 
-json *partial_json_by_id(json &resp_from_api, const std::string &what,
-                         const std::string &id) {
+const json *partial_json_by_id(const json &resp_from_api,
+                               const std::string &what, const std::string &id) {
   for (uint8_t i = 0; i < resp_from_api[what].size(); i++) {
     if (resp_from_api[what][i]["Id"].get<std::string>() == id) {
       return &resp_from_api[what][i];
@@ -63,7 +65,7 @@ json *partial_json_by_id(json &resp_from_api, const std::string &what,
   return nullptr;
 }
 
-std::wstring get_data_for_atom(json &resp_from_api, json *atom,
+std::wstring get_data_for_atom(const json &resp_from_api, const json *atom,
                                const std::string &from_where,
                                const std::string &id_key,
                                const std::string &what) {
@@ -74,9 +76,10 @@ std::wstring get_data_for_atom(json &resp_from_api, json *atom,
           .get<std::string>());
 }
 
-json *find_atom_by_indexes(json &resp_from_api, uint8_t day_index,
-                           uint8_t hour_index,
-                           const std::vector<uint8_t> &HourIdLookupTable) {
+const json *
+find_atom_by_indexes(const json &resp_from_api, uint8_t day_index,
+                     uint8_t hour_index,
+                     const std::vector<uint8_t> &HourIdLookupTable) {
   for (uint8_t k = 0; k < resp_from_api["Days"][day_index]["Atoms"].size();
        k++) {
     if (resp_from_api["Days"][day_index]["Atoms"][k]["HourId"].get<uint8_t>() ==
@@ -100,7 +103,7 @@ reload_for_new_week:
   std::string date_string = "date=" + date_stringstream.str();
   std::string endpoint = "api/3/timetable/actual";
 
-  json resp_from_api =
+  const json resp_from_api =
       bakaapi::get_data_from_endpoint(endpoint, GET, date_string);
 
   // this may be unnecessary but i dont have enaugh data to test it
@@ -384,8 +387,8 @@ reload_for_new_week:
       goto reload_for_new_week;
       break;
     case 10: // ENTER
-      json *atom = find_atom_by_indexes(resp_from_api, selected_cell.y,
-                                        selected_cell.x, HourIdLookupTable);
+      const json *atom = find_atom_by_indexes(
+          resp_from_api, selected_cell.y, selected_cell.x, HourIdLookupTable);
       if (atom == nullptr) {
         std::cerr << RED "[ERROR]" << RESET " Selector at invalid position\n";
         safe_exit(129);
@@ -535,7 +538,7 @@ reload_for_new_week:
 }
 
 void draw_days(WINDOW **&day_windows, uint16_t cell_height, uint8_t num_of_days,
-               json &resp_from_api) {
+               const json &resp_from_api) {
   for (uint8_t i = 0; i < num_of_days; i++) {
     // this wont draw left boarder window making it so it looks partially
     // offscreen
@@ -550,7 +553,7 @@ void draw_days(WINDOW **&day_windows, uint16_t cell_height, uint8_t num_of_days,
 
 void draw_lessons(WINDOW **&lesson_windows, uint8_t num_of_columns,
                   uint16_t cell_width, std::vector<uint8_t> &HourIdLookupTable,
-                  json &resp_from_api) {
+                  const json &resp_from_api) {
   for (uint8_t i = 0; i < num_of_columns; i++) {
     wborder(lesson_windows[i], 0, 0, ' ', 0, ACS_VLINE, ACS_VLINE, 0, 0);
     std::wstring caption;
@@ -594,11 +597,13 @@ void draw_lessons(WINDOW **&lesson_windows, uint8_t num_of_columns,
 void draw_cells(uint8_t num_of_columns, uint8_t num_of_days,
                 uint16_t cell_width, uint16_t cell_height,
                 std::vector<std::vector<WINDOW *>> &cells,
-                std::vector<uint8_t> &HourIdLookupTable, json &resp_from_api) {
+                std::vector<uint8_t> &HourIdLookupTable,
+                const json &resp_from_api) {
   for (uint8_t i = 0; i < num_of_days; i++) {
     for (uint8_t j = 0; j < num_of_columns; j++) {
 
-      json *atom = find_atom_by_indexes(resp_from_api, i, j, HourIdLookupTable);
+      const json *atom =
+          find_atom_by_indexes(resp_from_api, i, j, HourIdLookupTable);
       if (atom == nullptr) {
         continue;
       }
