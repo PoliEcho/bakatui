@@ -1,6 +1,7 @@
 #include "helper_funcs.h"
 #include "komens_menu.h"
 #include "marks.h"
+#include "memory.h"
 #include "net.h"
 #include "timetable.h"
 #include "types.h"
@@ -9,8 +10,11 @@
 #include <curses.h>
 #include <menu.h>
 
+std::vector<allocation> main_menu_allocated;
+
 void main_menu() {
-  wchar_t *choices[] = {
+  current_allocated = &main_menu_allocated;
+  const wchar_t *choices[] = {
       L"login",    L"Marks",   L"timetable", L"Komens",
       L"Homework", L"Absence", L"Exit",      nullptr,
   };
@@ -20,7 +24,7 @@ void main_menu() {
   complete_menu main_menu;
 
   int c;
-  int n_choices, i;
+  int n_choices;
 
   /* Initialize curses */
   setlocale(LC_ALL, "");
@@ -35,7 +39,7 @@ void main_menu() {
   /* Create items */
   n_choices = ARRAY_SIZE(choices);
   main_menu.items = (ITEM **)calloc(n_choices, sizeof(ITEM *));
-  for (i = 0; i < n_choices; ++i)
+  for (int i = 0; i < n_choices; ++i)
     main_menu.items[i] =
         new_item(wchar_to_char(choices[i]), wchar_to_char(choices[i]));
 
@@ -92,6 +96,7 @@ void main_menu() {
         goto close_menu;
       }
       choicesFuncs[item_index(current_item(main_menu.menu))]();
+      current_allocated = &main_menu_allocated;
       pos_menu_cursor(main_menu.menu);
       refresh();
       wrefresh(main_menu.win);
@@ -104,7 +109,7 @@ close_menu:
   /* Unpost and free all the memory taken up */
   unpost_menu(main_menu.menu);
   free_menu(main_menu.menu);
-  for (i = 0; i < n_choices; ++i)
+  for (int i = 0; i < n_choices; ++i)
     free_item(main_menu.items[i]);
   endwin();
 }
