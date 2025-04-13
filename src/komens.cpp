@@ -28,13 +28,19 @@ std::vector<allocation> komens_allocated;
 void insert_content(WINDOW *content_win, WINDOW *attachment_win,
                     json &resp_from_api);
 
+void komens_print_usage_message() {
+  attron(COLOR_PAIR(COLOR_BLUE));
+  mvprintw(LINES - 2, 0,
+           "Use PageUp and PageDown to scoll down or up a page of items");
+  mvprintw(LINES - 1, 0, "Arrow Keys to navigate (F1 to Exit)");
+  attroff(COLOR_PAIR(COLOR_BLUE));
+  refresh();
+}
+
 void komens_page(koment_type type) {
   current_allocated = &komens_allocated;
   json resp_from_api;
   {
-    /*std::ifstream f("test-data/komens.json");
-    resp_from_api = json::parse(f);
-    f.close();*/
     const char *types[] = {"/api/3/komens/messages/received",
                            "/api/3/komens/messages/sent",
                            "/api/3/komens/messages/noticeboard"};
@@ -148,12 +154,7 @@ void komens_page(koment_type type) {
                  resp_from_api["Messages"][item_index(
                      current_item(komens_choise_menu.menu))]);
 
-  attron(COLOR_PAIR(COLOR_BLUE));
-  mvprintw(LINES - 2, 0,
-           "Use PageUp and PageDown to scoll down or up a page of items");
-  mvprintw(LINES - 1, 0, "Arrow Keys to navigate (F1 to Exit)");
-  attroff(COLOR_PAIR(COLOR_BLUE));
-  refresh();
+  komens_print_usage_message();
 
   int c;
   while ((c = getch()) != KEY_F(1)) {
@@ -204,6 +205,7 @@ void komens_page(koment_type type) {
                   komens_choise_menu.menu))]["Attachments"][index]["Id"]
                   .get<std::string>(),
               path);
+          komens_print_usage_message();
         }
       }
       break;
