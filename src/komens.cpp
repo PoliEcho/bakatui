@@ -25,7 +25,7 @@ using nlohmann::json;
 
 std::vector<allocation> komens_allocated;
 
-void insert_content(WINDOW *content_win, WINDOW *attachment_win, size_t i,
+void insert_content(WINDOW *content_win, WINDOW *attachment_win,
                     json &resp_from_api);
 
 void komens_page(koment_type type) {
@@ -145,8 +145,8 @@ void komens_page(koment_type type) {
   WINDOW *attachment_win = newwin(1, 1, LINES, COLS);
 
   insert_content(content_win, attachment_win,
-                 item_index(current_item(komens_choise_menu.menu)),
-                 resp_from_api);
+                 resp_from_api["Messages"][item_index(
+                     current_item(komens_choise_menu.menu))]);
 
   attron(COLOR_PAIR(COLOR_BLUE));
   mvprintw(LINES - 2, 0,
@@ -169,22 +169,61 @@ void komens_page(koment_type type) {
     case 'k':
       menu_driver(komens_choise_menu.menu, REQ_UP_ITEM);
       break;
+    default:
+      if (c >= '1' && c <= '9') {
+        size_t index = c - '0' - 1;
+        if (index < resp_from_api["Messages"][item_index(
+                        current_item(komens_choise_menu.menu))]["Attachments"]
+                        .size()) {
+
+          std::string default_path =
+              "~/Downloads/" +
+              resp_from_api["Messages"][item_index(current_item(
+                  komens_choise_menu.menu))]["Attachments"][index]["Name"]
+                  .get<std::string>();
+          char path[256];
+
+          // Create input prompt at bottom of screen
+          move(LINES - 1, 0);
+          clrtoeol();
+          printw("Save path [%s]: ", default_path.c_str());
+          echo();
+          curs_set(1);
+          getnstr(path, sizeof(path) - 1);
+          if (strlen(path) == 0)
+            strcpy(path, default_path.c_str());
+          noecho();
+          curs_set(0);
+          move(LINES - 1, 0);
+          clrtoeol();
+          refresh();
+
+          // Download the attachment
+          bakaapi::download_attachment(
+              resp_from_api["Messages"][item_index(current_item(
+                  komens_choise_menu.menu))]["Attachments"][index]["Id"]
+                  .get<std::string>(),
+              path);
+        }
+      }
+      break;
     }
+
     insert_content(content_win, attachment_win,
-                   item_index(current_item(komens_choise_menu.menu)),
-                   resp_from_api);
+                   resp_from_api["Messages"][item_index(
+                       current_item(komens_choise_menu.menu))]);
     wrefresh(komens_choise_menu.win);
   }
   delete_all(&komens_allocated);
 }
 
-void insert_content(WINDOW *content_win, WINDOW *attachment_win, size_t i,
-                    json &resp_from_api) {
+void insert_content(WINDOW *content_win, WINDOW *attachment_win,
+                    json &message) {
   wclear(content_win);
   mvwprintw(content_win, 0, 0, "%s",
-            html_to_string(resp_from_api.at("Messages")[i]["Text"]).c_str());
+            html_to_string(message.at("Text")).c_str());
   wrefresh(content_win);
-  if (!resp_from_api.at("Messages")[i]["Attachments"].empty()) {
+  if (!message.at("Attachments").empty()) {
 
     size_t max_item_lenght = 0;
     {
@@ -192,19 +231,15 @@ void insert_content(WINDOW *content_win, WINDOW *attachment_win, size_t i,
       size_t max_size_lenght = 0;
       size_t tmp_lenght;
 
-      for (size_t j = 0;
-           j < resp_from_api.at("Messages")[i]["Attachments"].size(); j++) {
-        tmp_lenght = resp_from_api.at("Messages")[i]["Attachments"][j]["Name"]
-                         .get<std::string>()
-                         .length();
+      for (size_t j = 0; j < message.at("Attachments").size(); j++) {
+        tmp_lenght =
+            message.at("Attachments")[j]["Name"].get<std::string>().length();
         if (tmp_lenght > max_name_lenght) {
           max_name_lenght = tmp_lenght;
         }
 
         tmp_lenght =
-            std::to_string(
-                resp_from_api.at("Messages")[i]["Attachments"][j]["Size"]
-                    .get<size_t>())
+            std::to_string(message.at("Attachments")[j]["Size"].get<size_t>())
                 .length();
         if (tmp_lenght > max_size_lenght) {
           max_size_lenght = tmp_lenght;
@@ -221,18 +256,14 @@ void insert_content(WINDOW *content_win, WINDOW *attachment_win, size_t i,
 
     wborder(attachment_win, 0, ' ', 0, 0, 0, ACS_HLINE, 0, ACS_HLINE);
     print_in_middle(attachment_win, 0, 0, max_item_lenght + 2, "Attachments",
-                    COLOR_RED);
-    for (size_t j = 0;
-         j < resp_from_api.at("Messages")[i]["Attachments"].size(); j++) {
+                    COLOR_PAIR(COLOR_RED));
+    for (size_t j = 0; j < message.at("Attachments").size(); j++) {
 
-      mvwprintw(attachment_win, j + 1, 2, "%s %s",
-                resp_from_api.at("Messages")[i]["Attachments"][j]["Name"]
-                    .get<std::string>()
-                    .c_str(),
-                std::to_string(
-                    resp_from_api.at("Messages")[i]["Attachments"][j]["Size"]
-                        .get<size_t>())
-                    .c_str());
+      mvwprintw(
+          attachment_win, j + 1, 2, "%s %s",
+          message.at("Attachments")[j]["Name"].get<std::string>().c_str(),
+          std::to_string(message.at("Attachments")[j]["Size"].get<size_t>())
+              .c_str());
 
       wattron(attachment_win, COLOR_PAIR(COLOR_MAGENTA));
       mvwprintw(attachment_win, j + 1, 0, "%zu>", j + 1);

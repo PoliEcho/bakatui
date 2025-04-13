@@ -1,8 +1,10 @@
 #include "main.h"
 #include "color.h"
+#include "flags.h"
 #include "helper_funcs.h"
 #include "main_menu.h"
 #include "net.h"
+#include "types.h"
 #include <csignal>
 #include <cstdlib>
 #include <curl/curl.h>
@@ -12,8 +14,6 @@
 #include <regex>
 #include <string>
 #include <unistd.h>
-#include "flags.h"
-#include "types.h"
 
 std::string baka_api_url;
 
@@ -36,14 +36,27 @@ int main(int argc, char **argv) {
 
     int opt;
     while ((opt = getopt(argc, argv, "hVvLS:")) != -1) {
-        switch (opt) {
-            case 'h': PrintHelp(); break;
-            case 'V': PrintVersion(); break;
-            case 'v': config.verbose = true; break;
-            case 'L': DeleteLogin(savedir_path); break;
-            case 'S': config.ignoressl = true; break;
-            default: std::cerr << RED"[ERROR]" << RESET" invalid option: " << (char)optopt << "\ntry: -h\n"; safe_exit(EINVAL);
-        }
+      switch (opt) {
+      case 'h':
+        PrintHelp();
+        break;
+      case 'V':
+        PrintVersion();
+        break;
+      case 'v':
+        config.verbose = true;
+        break;
+      case 'L':
+        DeleteLogin(savedir_path);
+        break;
+      case 'S':
+        config.ignoressl = true;
+        break;
+      default:
+        std::cerr << RED "[ERROR]" << RESET " invalid option: " << (char)optopt
+                  << "\ntry: -h\n";
+        safe_exit(EINVAL);
+      }
     }
 
     std::string urlfile_path = std::string(savedir_path) + "/url";
@@ -79,6 +92,6 @@ int main(int argc, char **argv) {
     get_input_and_login();
   }
   main_menu();
-  
+
   return 0;
 }
