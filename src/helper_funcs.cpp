@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <codecvt>
 #include <csignal>
+#include <cstring>
 #include <curses.h>
 #include <dirent.h>
 #include <filesystem>
@@ -207,6 +208,11 @@ char *wchar_to_char(const wchar_t *src) {
 
   size_t len = wcslen(src) + 1; // +1 for null terminator
   char *dest = new char[len * MB_CUR_MAX];
+  current_allocated->push_back(allocation{
+      GENERIC_ARRAY,
+      dest,
+      len * MB_CUR_MAX,
+  });
 
   std::wcstombs(dest, src, len * MB_CUR_MAX);
   return dest;

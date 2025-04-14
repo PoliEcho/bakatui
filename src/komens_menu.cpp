@@ -1,6 +1,7 @@
 #include "komens_menu.h"
 #include "helper_funcs.h"
 #include "komens.h"
+#include "memory.h"
 #include "net.h"
 #include "types.h"
 #include <cstdlib>
@@ -8,15 +9,19 @@
 #include <curses.h>
 #include <menu.h>
 
+std::vector<allocation> komens_menu_allocated;
+
 void komens_menu() {
+  current_allocated = &komens_menu_allocated;
   wchar_t *choices[] = {
       L"received", L"sent", L"noticeboard", L"Exit", nullptr,
   };
 
   complete_menu komens_menu;
+  komens_menu_allocated.push_back({COMPLETE_MENU_TYPE, &komens_menu, 1});
 
   int c;
-  int n_choices, i;
+  int n_choices;
 
   /* Initialize curses */
   setlocale(LC_ALL, "");
@@ -30,8 +35,11 @@ void komens_menu() {
 
   /* Create items */
   n_choices = ARRAY_SIZE(choices);
-  komens_menu.items = (ITEM **)calloc(n_choices, sizeof(ITEM *));
-  for (i = 0; i < n_choices; ++i)
+  komens_menu.items = new ITEM *[ARRAY_SIZE(choices)];
+  komens_menu.items_size = ARRAY_SIZE(choices);
+
+  for (int i = 0; i < n_choices; ++i)
+
     komens_menu.items[i] =
         new_item(wchar_to_char(choices[i]), wchar_to_char(choices[i]));
 
@@ -89,6 +97,7 @@ void komens_menu() {
       }
       komens_page(
           static_cast<koment_type>(item_index(current_item(komens_menu.menu))));
+      current_allocated = &komens_menu_allocated;
       pos_menu_cursor(komens_menu.menu);
       refresh();
       wrefresh(komens_menu.win);
@@ -100,8 +109,6 @@ close_menu:
 
   /* Unpost and free all the memory taken up */
   unpost_menu(komens_menu.menu);
-  free_menu(komens_menu.menu);
-  for (i = 0; i < n_choices; ++i)
-    free_item(komens_menu.items[i]);
+  delete_all(&komens_menu_allocated);
   endwin();
 }

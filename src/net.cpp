@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <curl/curl.h>
+#include <curl/header.h>
 #include <curses.h>
 #include <dirent.h>
 #include <fcntl.h>
@@ -111,24 +112,29 @@ std::tuple<std::string, int> send_curl_request(
       safe_exit(EINVAL);
     }
 
+    CURLcode curl_return_code = curl_easy_perform(curl);
+    curl_slist_free_all(headers);
+    if (curl_return_code != CURLE_OK) {
+      std::cerr << RED "[ERROR] " << RESET << "curl_easy_perform() failed: "
+                << curl_easy_strerror(curl_return_code) << "\n";
+      safe_exit(21);
+    }
+    if (fileStream) {
+      fileStream->close();
+    }
+
+    int http_code = 0;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+
+    return {response, http_code};
+
   } else {
     std::cerr << RED "[ERROR] " << RESET "curl not initialised\n";
     safe_exit(20);
-  }
-  CURLcode curl_return_code = curl_easy_perform(curl);
-  if (curl_return_code != CURLE_OK) {
-    std::cerr << RED "[ERROR] " << RESET << "curl_easy_perform() failed: "
-              << curl_easy_strerror(curl_return_code) << "\n";
-    safe_exit(21);
-  }
-  if (fileStream) {
-    fileStream->close();
-  }
 
-  int http_code = 0;
-  curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-
-  return {response, http_code};
+    // prevent compiler warning
+    return {"", -1};
+  }
 }
 namespace bakaapi {
 

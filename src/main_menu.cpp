@@ -5,6 +5,7 @@
 #include "net.h"
 #include "timetable.h"
 #include "types.h"
+#include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <curses.h>
@@ -22,9 +23,7 @@ void main_menu() {
                               nullptr, nullptr,    nullptr,        nullptr};
 
   complete_menu main_menu;
-
-  int c;
-  int n_choices;
+  main_menu_allocated.push_back({COMPLETE_MENU_TYPE, &main_menu, 1});
 
   /* Initialize curses */
   setlocale(LC_ALL, "");
@@ -37,14 +36,15 @@ void main_menu() {
   init_pair(2, COLOR_CYAN, COLOR_BLACK);
 
   /* Create items */
-  n_choices = ARRAY_SIZE(choices);
-  main_menu.items = (ITEM **)calloc(n_choices, sizeof(ITEM *));
-  for (int i = 0; i < n_choices; ++i)
+
+  main_menu.items = new ITEM *[ARRAY_SIZE(choices)];
+  main_menu.items_size = ARRAY_SIZE(choices);
+  for (size_t i = 0; i < ARRAY_SIZE(choices); ++i) {
     main_menu.items[i] =
         new_item(wchar_to_char(choices[i]), wchar_to_char(choices[i]));
-
+  }
   /* Crate menu */
-  main_menu.menu = new_menu((ITEM **)main_menu.items);
+  main_menu.menu = new_menu(main_menu.items);
 
   /* Create the window to be associated with the menu */
   main_menu.win = newwin(12, 40, 4, 4);
@@ -77,6 +77,7 @@ void main_menu() {
   attroff(COLOR_PAIR(2));
   refresh();
 
+  int c;
   while ((c = getch()) != KEY_F(1)) {
     switch (c) {
     case KEY_DOWN:
@@ -92,7 +93,7 @@ void main_menu() {
       break;
     case 10: // ENTER
       clear();
-      if (item_index(current_item(main_menu.menu)) == n_choices - 1) {
+      if (item_index(current_item(main_menu.menu)) == ARRAY_SIZE(choices) - 1) {
         goto close_menu;
       }
       choicesFuncs[item_index(current_item(main_menu.menu))]();
@@ -108,8 +109,6 @@ close_menu:
 
   /* Unpost and free all the memory taken up */
   unpost_menu(main_menu.menu);
-  free_menu(main_menu.menu);
-  for (int i = 0; i < n_choices; ++i)
-    free_item(main_menu.items[i]);
+  delete_all(&main_menu_allocated);
   endwin();
 }

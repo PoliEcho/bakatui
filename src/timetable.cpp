@@ -94,6 +94,7 @@ void timetable_page() {
   current_allocated = &timetable_allocated;
   auto dateSelected = std::chrono::system_clock::now();
 reload_for_new_week:
+  clear();
   std::time_t date_time_t = std::chrono::system_clock::to_time_t(dateSelected);
   std::tm local_time = *std::localtime(&date_time_t);
 

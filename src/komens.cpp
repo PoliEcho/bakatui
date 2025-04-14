@@ -26,7 +26,7 @@ using nlohmann::json;
 std::vector<allocation> komens_allocated;
 
 void insert_content(WINDOW *content_win, WINDOW *attachment_win,
-                    json &resp_from_api);
+                    const json &resp_from_api);
 
 void komens_print_usage_message() {
   attron(COLOR_PAIR(COLOR_BLUE));
@@ -39,15 +39,15 @@ void komens_print_usage_message() {
 
 void komens_page(koment_type type) {
   current_allocated = &komens_allocated;
-  json resp_from_api;
-  {
+
+  const json resp_from_api = [&]() -> json {
     const char *types[] = {"/api/3/komens/messages/received",
                            "/api/3/komens/messages/sent",
                            "/api/3/komens/messages/noticeboard"};
 
     const std::string endpoint = types[type];
-    resp_from_api = bakaapi::get_data_from_endpoint(endpoint, POST);
-  }
+    return bakaapi::get_data_from_endpoint(endpoint, POST);
+  }();
 
   /* Initialize curses */
   setlocale(LC_ALL, "");
@@ -63,14 +63,16 @@ void komens_page(koment_type type) {
   }
 
   complete_menu komens_choise_menu;
+  komens_allocated.push_back({COMPLETE_MENU_TYPE, &komens_choise_menu, 1});
 
   size_t num_of_komens = resp_from_api["Messages"].size();
   komens_choise_menu.items = new ITEM *[num_of_komens + 1];
-  komens_allocated.push_back(
-      {ITEM_ARRAY, komens_choise_menu.items, num_of_komens});
+  komens_choise_menu.items_size = num_of_komens + 1;
 
   char **title_bufs = new char *[num_of_komens];
+  komens_allocated.push_back({CHAR_PTR_ARRAY, title_bufs, num_of_komens});
   char **name_bufs = new char *[num_of_komens];
+  komens_allocated.push_back({CHAR_PTR_ARRAY, name_bufs, num_of_komens});
   size_t max_item_lenght;
   {
     size_t max_title_lenght = 0;
@@ -78,11 +80,9 @@ void komens_page(koment_type type) {
     size_t tmp_lenght;
     char tmp_buf[1500];
     for (size_t i = 0; i < num_of_komens; i++) {
-      wcstombs(tmp_buf,
-               string_to_wstring(
-                   resp_from_api["Messages"][i]["Title"].get<std::string>())
-                   .c_str(),
-               sizeof(tmp_buf));
+      strlcpy(tmp_buf,
+              resp_from_api["Messages"][i]["Title"].get<std::string>().c_str(),
+              sizeof(tmp_buf));
 
       tmp_lenght =
           resp_from_api["Messages"][i]["Title"].get<std::string>().length();
@@ -93,12 +93,12 @@ void komens_page(koment_type type) {
 
       title_bufs[i] = new char[strlen(tmp_buf) + 1];
       strlcpy(title_bufs[i], tmp_buf, strlen(tmp_buf) + 1);
-      wcstombs(
-          tmp_buf,
-          string_to_wstring(
-              resp_from_api["Messages"][i]["Sender"]["Name"].get<std::string>())
-              .c_str(),
-          sizeof(tmp_buf));
+
+      strlcpy(tmp_buf,
+              resp_from_api["Messages"][i]["Sender"]["Name"]
+                  .get<std::string>()
+                  .c_str(),
+              sizeof(tmp_buf));
 
       tmp_lenght = resp_from_api["Messages"][i]["Sender"]["Name"]
                        .get<std::string>()
@@ -118,7 +118,6 @@ void komens_page(koment_type type) {
   komens_choise_menu.items[num_of_komens] = nullptr;
 
   komens_choise_menu.menu = new_menu(komens_choise_menu.items);
-  komens_allocated.push_back({MENU_TYPE, komens_choise_menu.menu, 1});
 
   komens_choise_menu.win =
       newwin(MAIN_WIN_HIGHT, max_item_lenght + 1, DEFAULT_OFSET, DEFAULT_OFSET);
@@ -149,6 +148,7 @@ void komens_page(koment_type type) {
   komens_allocated.push_back({WINDOW_TYPE, content_win, 1});
 
   WINDOW *attachment_win = newwin(1, 1, LINES, COLS);
+  komens_allocated.push_back({WINDOW_TYPE, attachment_win, 1});
 
   insert_content(content_win, attachment_win,
                  resp_from_api["Messages"][item_index(
@@ -216,11 +216,13 @@ void komens_page(koment_type type) {
                        current_item(komens_choise_menu.menu))]);
     wrefresh(komens_choise_menu.win);
   }
+  unpost_menu(komens_choise_menu.menu);
+  endwin();
   delete_all(&komens_allocated);
 }
 
 void insert_content(WINDOW *content_win, WINDOW *attachment_win,
-                    json &message) {
+                    const json &message) {
   wclear(content_win);
   mvwprintw(content_win, 0, 0, "%s",
             html_to_string(message.at("Text")).c_str());

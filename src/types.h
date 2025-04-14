@@ -148,6 +148,7 @@ struct SelectorType {
 struct complete_menu {
   WINDOW *win;
   ITEM **items;
+  size_t items_size;
   MENU *menu;
 };
 

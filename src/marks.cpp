@@ -31,22 +31,25 @@ using nlohmann::json;
 
 std::vector<allocation> marks_allocated;
 
-void init_wins(WINDOW **wins, int n, json marks_json);
-void win_show(WINDOW *win, wchar_t *label, int label_color, int width,
-              int height, json marks_json, int SubjectIndex);
+void init_wins(WINDOW **wins, const int n, const json &marks_json);
+void win_show(WINDOW *win, const wchar_t *label, const int label_color,
+              int width, int height, const json &marks_json,
+              const int SubjectIndex);
 
 void marks_page() {
   current_allocated = &marks_allocated;
-  json resp_from_api;
-  {
-    std::string endpoint = "api/3/marks";
-    resp_from_api = bakaapi::get_data_from_endpoint(endpoint, GET);
-  }
-  size_t size_my_wins = resp_from_api["Subjects"].size();
+
+  // thanks to lambda i can make this const
+  const json resp_from_api = [&]() -> json {
+    const std::string endpoint = "api/3/marks";
+    return bakaapi::get_data_from_endpoint(endpoint, GET);
+  }();
+
+  const size_t size_my_wins = resp_from_api["Subjects"].size();
   WINDOW **my_wins = new (std::nothrow) WINDOW *[size_my_wins];
   marks_allocated.push_back({WINDOW_ARRAY, my_wins, size_my_wins});
 
-  size_t size_my_panels = resp_from_api["Subjects"].size();
+  const size_t size_my_panels = size_my_wins;
   PANEL **my_panels = new (std::nothrow) PANEL *[size_my_panels];
   marks_allocated.push_back({PANEL_ARRAY, my_panels, size_my_panels});
 
@@ -132,7 +135,7 @@ void marks_page() {
 }
 
 /* Put all the windows */
-void init_wins(WINDOW **wins, int n, json marks_json) {
+void init_wins(WINDOW **wins, const int n, const json &marks_json) {
   int x, y, i;
   wchar_t label[1500];
 
@@ -145,12 +148,12 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
   for (i = 0; i < n; ++i) {
 
     // Calculate label and max_text_length to determine window width
-    std::string sub_name = marks_json["Subjects"][i]["Subject"]["Name"];
-    std::string sub_avg_s = marks_json["Subjects"][i]["AverageText"];
+    const std::string sub_name = marks_json["Subjects"][i]["Subject"]["Name"];
+    const std::string sub_avg_s = marks_json["Subjects"][i]["AverageText"];
 
     // Convert to wchar_t
-    std::wstring wsub_name = string_to_wstring(sub_name);
-    std::wstring wsub_avg_s = string_to_wstring(sub_avg_s);
+    const std::wstring wsub_name = string_to_wstring(sub_name);
+    const std::wstring wsub_avg_s = string_to_wstring(sub_avg_s);
 
     // Using swprintf for wide character formatting
     swprintf(label, sizeof(label) / sizeof(label[0]), L"%ls - avg: %ls",
@@ -160,17 +163,18 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
     for (unsigned int j = 0; j < static_cast<unsigned int>(
                                      marks_json["Subjects"][i]["Marks"].size());
          j++) {
-      std::string caption =
+      const std::string caption =
           rm_tr_le_whitespace(marks_json["Subjects"][i]["Marks"][j]["Caption"]);
-      std::string theme =
+      const std::string theme =
           rm_tr_le_whitespace(marks_json["Subjects"][i]["Marks"][j]["Theme"]);
 
-      std::wstring wcaption = string_to_wstring(caption);
-      std::wstring wtheme = string_to_wstring(theme);
+      const std::wstring wcaption = string_to_wstring(caption);
+      const std::wstring wtheme = string_to_wstring(theme);
 
       // Some code that does something and fixes some edge cases
-      std::string testCaption = caption + std::format(" {{{}}} [{}]", "X", 0);
-      std::wstring wTestCaption = string_to_wstring(testCaption);
+      const std::string testCaption =
+          caption + std::format(" {{{}}} [{}]", "X", 0);
+      const std::wstring wTestCaption = string_to_wstring(testCaption);
       max_text_length =
           std::max({max_text_length, wTestCaption.length(), wtheme.length()});
     }
@@ -203,8 +207,9 @@ void init_wins(WINDOW **wins, int n, json marks_json) {
 }
 
 /* Show the window with a border and a label */
-void win_show(WINDOW *win, wchar_t *label, int label_color, int width,
-              int height, json marks_json, int SubjectIndex) {
+void win_show(WINDOW *win, const wchar_t *label, const int label_color,
+              int width, int height, const json &marks_json,
+              const int SubjectIndex) {
 
   // is the compiler smoking weed or something, why is it thinking starty is not
   // used ??
