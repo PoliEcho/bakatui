@@ -12,3 +12,4 @@
 > - [x] Timetable  
 > - [x] Komens  
 > - [ ] Absence
+> - [ ] Homework
