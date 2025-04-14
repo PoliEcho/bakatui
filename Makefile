@@ -2,6 +2,7 @@
 CPPC = g++
 CPPC_FLAGS = -std=c++23 -s -O3 -lncursesw -lcurl -lmenuw -lpanel -Wall -Wextra -Wno-write-strings
 DEBUG_FLAGS = -ggdb -std=c++23 -lncursesw -lcurl -lmenuw -lpanel -Wall -Wextra -Wno-write-strings
+DEBUG_ASANITIZE = -fsanitize=address -ggdb -fno-omit-frame-pointer -std=c++23 -lncursesw -lcurl -lmenuw -lpanel -Wall -Wextra -Wno-write-strings
 
 
 SRC_PATH := src
@@ -18,6 +19,9 @@ all: make-build-dir $(BIN_PATH)/bakatui
 
 debug: CPPC_FLAGS = $(DEBUG_FLAGS)
 debug: make-build-dir $(BIN_PATH)/bakatui
+
+asan: CPPC_FLAGS = $(DEBUG_ASANITIZE)
+asan: make-build-dir $(BIN_PATH)/bakatui
 
 
 make-build-dir:
@@ -39,4 +43,4 @@ install:
 clean:
 	rm -fr build
 
-.PHONY: all clean install debug
+.PHONY: all clean install debug asan
