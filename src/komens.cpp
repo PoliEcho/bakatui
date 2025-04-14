@@ -273,7 +273,7 @@ void insert_content(WINDOW *content_win, WINDOW *attachment_win,
       mvwprintw(attachment_win, j + 1, 0, "%zu>", j + 1);
       wattroff(attachment_win, COLOR_PAIR(COLOR_MAGENTA));
     }
-    { // remove duplicating spaces
+    { // remove duplicating edges
       unsigned short attachment_win_top, attachment_win_left,
           attachment_win_height, attachment_win_width;
       getbegyx(attachment_win, attachment_win_top, attachment_win_left);
@@ -284,6 +284,10 @@ void insert_content(WINDOW *content_win, WINDOW *attachment_win,
     }
     refresh();
 
+    wrefresh(attachment_win);
+  } else {
+    // remove attachment window if there are no attachments
+    wclear(attachment_win);
     wrefresh(attachment_win);
   }
 }
