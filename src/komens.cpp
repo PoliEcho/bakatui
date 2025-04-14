@@ -5,10 +5,12 @@
 #include "types.h"
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <curses.h>
 #include <cwchar>
+#include <future>
 #include <menu.h>
 #include <ncurses.h>
 #include <nlohmann/json.hpp>
@@ -199,12 +201,42 @@ void komens_page(koment_type type) {
           clrtoeol();
           refresh();
 
+          char progress_bar[20];
+          std::fill(progress_bar, progress_bar + 20, '.');
+          LimitedInt progress_index(0, 0, sizeof(progress_bar) - 1);
           // Download the attachment
-          bakaapi::download_attachment(
+          auto future = std::async(
+              std::launch::async, bakaapi::download_attachment,
               resp_from_api["Messages"][item_index(current_item(
                   komens_choise_menu.menu))]["Attachments"][index]["Id"]
                   .get<std::string>(),
               path);
+          while (true) {
+            if (future.wait_for(std::chrono::seconds(1)) ==
+                std::future_status::ready) {
+              // Future has completed
+              int result = future.get();
+              if (result != 0) {
+                attron(COLOR_PAIR(COLOR_RED));
+                mvprintw(LINES - 1, 0, "Download failed with error code: %d",
+                         result);
+                attroff(COLOR_PAIR(COLOR_RED));
+              } else {
+                attron(COLOR_PAIR(COLOR_GREEN));
+                mvprintw(LINES - 1, 0, "Download completed successfully");
+                attroff(COLOR_PAIR(COLOR_GREEN));
+              }
+              break;
+            } else {
+              progress_bar[progress_index] = '#';
+
+              // Future is still running
+              mvprintw(LINES - 1, 0, "%s", progress_bar);
+              progress_bar[progress_index] = '.';
+              progress_index++;
+            }
+          }
+
           komens_print_usage_message();
         }
       }
