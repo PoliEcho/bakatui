@@ -10,5 +10,5 @@
 > - [x] Login  
 > - [x] Marks  
 > - [x] Timetable  
-> - [ ] Komens  
+> - [x] Komens  
 > - [ ] Absence
