@@ -99,8 +99,9 @@ void main_menu() {
       choicesFuncs[item_index(current_item(main_menu.menu))]();
       current_allocated = &main_menu_allocated;
       pos_menu_cursor(main_menu.menu);
-      refresh();
       wrefresh(main_menu.win);
+      refresh();
+      redrawwin(main_menu.win);
       break;
     }
     wrefresh(main_menu.win);
