@@ -6,6 +6,7 @@
 #include "net.h"
 #include "types.h"
 #include <bits/chrono.h>
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <ctime>
@@ -25,6 +26,16 @@ using nlohmann::json;
 #define BOTTOM_PADDING 5
 
 #define DEFAULT_OFFSET 3
+
+#define REMOVED_COLOR_PAIR COLOR_GREEN
+#define ROOMCHANGED_COLOR_PAIR COLOR_MAGENTA
+#define SUBSTITUTION_COLOR_PAIR COLOR_YELLOW
+#define ADDED_COLOR_PAIR COLOR_BLUE
+
+#define HELP_TEXT                                                              \
+  "Arrows/hjkl to select | ENTER to show info | p/n to select weeks |F1 to "   \
+  "exit"
+#define HELP_TEXT_LENGTH sizeof(HELP_TEXT) - 1
 
 std::vector<allocation> timetable_allocated;
 
@@ -279,9 +290,32 @@ reload_for_new_week:
     }
   }
   attron(COLOR_PAIR(COLOR_BLUE));
-  mvprintw(LINES - 2, 0,
-           "Arrows/hjkl to select | ENTER to show info | p/n to select weeks "
-           "|F1 to exit");
+  mvprintw(LINES - 2, 0, HELP_TEXT);
+  attroff(COLOR_PAIR(COLOR_BLUE));
+
+  {
+    constexpr char *change_types[] = {"Canceled/Removed", "RoomChanged",
+                                      "Substitution", "Added"};
+
+    constexpr uint8_t change_types_colors[] = {
+        REMOVED_COLOR_PAIR, ROOMCHANGED_COLOR_PAIR, SUBSTITUTION_COLOR_PAIR,
+        ADDED_COLOR_PAIR};
+
+    for (uint8_t i = 0; i < ARRAY_SIZE(change_types); i++) {
+      init_pair(UCHAR_MAX - i, COLOR_BLACK, change_types_colors[i]);
+    }
+
+    uint8_t text_offset = 1;
+    for (uint8_t i = 0; i < ARRAY_SIZE(change_types); i++) {
+      attron(COLOR_PAIR(UCHAR_MAX - i));
+      mvprintw(LINES - 2, HELP_TEXT_LENGTH + text_offset, "%s",
+               change_types[i]);
+      attroff(COLOR_PAIR(UCHAR_MAX - i));
+      text_offset += strlen(change_types[i]) + 1;
+    }
+  }
+
+  attron(COLOR_PAIR(COLOR_BLUE));
   {
     std::tm end_week = local_time;
     std::tm start_week = local_time;
@@ -296,13 +330,14 @@ reload_for_new_week:
             .get<uint8_t>();
 
     // Calculate days back to start day (handles week wraparound)
-    int days_back = (current_wday >= start_day)
-                        ? (current_wday - start_day)
-                        : (current_wday + 7 - start_day);
+    uint8_t days_back = (current_wday >= start_day)
+                            ? (current_wday - start_day)
+                            : (current_wday + 7 - start_day);
 
     // Calculate days forward to end day (handles week wraparound)
-    int days_forward = (current_wday <= end_day) ? (end_day - current_wday)
-                                                 : (end_day + 7 - current_wday);
+    uint8_t days_forward = (current_wday <= end_day)
+                               ? (end_day - current_wday)
+                               : (end_day + 7 - current_wday);
 
     // Adjust dates
     start_week.tm_mday -= days_back;
@@ -619,20 +654,24 @@ void draw_cells(uint8_t num_of_columns, uint8_t num_of_days,
               hash_djb2a(atom->at("Change")["ChangeType"].get<std::string>())) {
           case "Canceled"_sh:
           case "Removed"_sh:
-            wattron(cells[i][j], COLOR_PAIR(COLOR_GREEN));
+            wattron(cells[i][j], COLOR_PAIR(REMOVED_COLOR_PAIR));
             box(cells[i][j], 0, 0);
-            wattroff(cells[i][j], COLOR_PAIR(COLOR_GREEN));
+            wattroff(cells[i][j], COLOR_PAIR(REMOVED_COLOR_PAIR));
             break;
           case "RoomChanged"_sh:
-          case "Substitution"_sh:
-            wattron(cells[i][j], COLOR_PAIR(COLOR_YELLOW));
+            wattron(cells[i][j], COLOR_PAIR(ROOMCHANGED_COLOR_PAIR));
             box(cells[i][j], 0, 0);
-            wattroff(cells[i][j], COLOR_PAIR(COLOR_YELLOW));
+            wattroff(cells[i][j], COLOR_PAIR(ROOMCHANGED_COLOR_PAIR));
+            break;
+          case "Substitution"_sh:
+            wattron(cells[i][j], COLOR_PAIR(SUBSTITUTION_COLOR_PAIR));
+            box(cells[i][j], 0, 0);
+            wattroff(cells[i][j], COLOR_PAIR(SUBSTITUTION_COLOR_PAIR));
             break;
           case "Added"_sh:
-            wattron(cells[i][j], COLOR_PAIR(COLOR_BLUE));
+            wattron(cells[i][j], COLOR_PAIR(ADDED_COLOR_PAIR));
             box(cells[i][j], 0, 0);
-            wattroff(cells[i][j], COLOR_PAIR(COLOR_BLUE));
+            wattroff(cells[i][j], COLOR_PAIR(ADDED_COLOR_PAIR));
             break;
           default:
             // TODO add error handling
