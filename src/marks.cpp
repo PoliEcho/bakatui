@@ -38,6 +38,7 @@ void win_show(WINDOW *win, const wchar_t *label, const int label_color,
 
 void marks_page() {
   current_allocated = &marks_allocated;
+  curs_set(0);
 
   // thanks to lambda i can make this const
   const json resp_from_api = [&]() -> json {
@@ -132,6 +133,7 @@ void marks_page() {
   endwin();
   clear();
   delete_all(&marks_allocated);
+  curs_set(1);
 }
 
 /* Put all the windows */
