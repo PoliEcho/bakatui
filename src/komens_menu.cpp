@@ -98,9 +98,11 @@ void komens_menu() {
       komens_page(
           static_cast<koment_type>(item_index(current_item(komens_menu.menu))));
       current_allocated = &komens_menu_allocated;
+      clear();
       pos_menu_cursor(komens_menu.menu);
-      refresh();
       wrefresh(komens_menu.win);
+      refresh();
+      redrawwin(komens_menu.win);
       break;
     }
     wrefresh(komens_menu.win);
