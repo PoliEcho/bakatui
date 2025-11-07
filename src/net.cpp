@@ -187,7 +187,13 @@ void refresh_access_token() {
   if (http_code != 200) {
     std::cerr << RED "[ERROR] " << RESET << http_code
               << "is non 200 response\n";
+    def_prog_mode();
+    endwin();
     get_input_and_login();
+    reset_prog_mode();
+    refresh();
+    doupdate();
+    return;
   }
 
   SoRAuthFile(true, response);
