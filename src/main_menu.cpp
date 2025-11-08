@@ -17,10 +17,10 @@ std::vector<allocation> main_menu_allocated;
 void main_menu() {
   current_allocated = &main_menu_allocated;
   const wchar_t *choices[] = {
-      L"login",    L"Marks",   L"timetable", L"Komens",
+      L"Marks",   L"timetable", L"Komens",
       L"Homework", L"Absence", L"Exit",      nullptr,
   };
-  void (*choicesFuncs[])() = {nullptr, marks_page, timetable_page, komens_menu,
+  void (*choicesFuncs[])() = {marks_page, timetable_page, komens_menu,
                               nullptr, absence_page,    nullptr,        nullptr};
 
   complete_menu main_menu;
