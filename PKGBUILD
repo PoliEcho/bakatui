@@ -1,4 +1,4 @@
-pkgname="bakatui-git"
+pkgname="bakatui"
 _pkgname="bakatui"
 provides=("${_pkgname}")
 conflicts=("${_pkgname}")
