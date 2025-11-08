@@ -38,7 +38,7 @@ $(OBJ_PATH)/%.o: $(SRC_PATH)/%.cpp $(SRC_PATH)/%.h
 
 
 install:
-	@install -vpm 755 -o root -g root $(BIN_PATH)/bakatui $(DESTDIR)/usr/bin/
+	@install -Dvpm 755 -o root -g root $(BIN_PATH)/bakatui $(DESTDIR)/usr/bin/
 
 clean:
 	rm -fr build
