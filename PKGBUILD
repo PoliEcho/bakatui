@@ -2,7 +2,7 @@ pkgname="bakatui-git"
 _pkgname="bakatui"
 provides=("${_pkgname}")
 conflicts=("${_pkgname}")
-pkgver=1.0.0.r0.gab854ed
+pkgver=1.0.3.r0.gab854ed
 pkgrel=1
 arch=('i686' 'pentium4' 'x86_64' 'arm' 'armv6h' 'armv7h' 'aarch64' 'riscv64')
 url=https://git.pupes.org/PoliEcho/bakatui
@@ -55,7 +55,7 @@ build() {
 
 package() {
     cd "$srcdir/$_pkgname"
-    
+    mkdir -p "${pkgdir}/usr/bin"
     make DESTDIR="$pkgdir" install
     
     install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
