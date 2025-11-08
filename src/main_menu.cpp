@@ -10,6 +10,7 @@
 #include <cstring>
 #include <curses.h>
 #include <menu.h>
+#include "absence.h"
 
 std::vector<allocation> main_menu_allocated;
 
@@ -20,7 +21,7 @@ void main_menu() {
       L"Homework", L"Absence", L"Exit",      nullptr,
   };
   void (*choicesFuncs[])() = {nullptr, marks_page, timetable_page, komens_menu,
-                              nullptr, nullptr,    nullptr,        nullptr};
+                              nullptr, absence_page,    nullptr,        nullptr};
 
   complete_menu main_menu;
   main_menu_allocated.push_back({COMPLETE_MENU_TYPE, &main_menu, 1});
