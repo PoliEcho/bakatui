@@ -56,7 +56,7 @@ void absence_page() {
     init_pair(i, i, COLOR_BLACK);
   }
 
-  const uint16_t sum_win_height = (resp_from_api["Absences"].size()*2)+1;
+  const uint16_t sum_win_height = (resp_from_api["Absences"].size()*2)+3;
   const uint16_t sum_win_width = 1+DATE_LEN+1+(SUM_FIELD_NUM*4);
   const float absence_threshold = resp_from_api["PercentageThreshold"].get<float>()*100.0f;
   {
@@ -74,7 +74,8 @@ void absence_page() {
         wattroff(sum_win, sum_field_colors[i]);
     }
      
-    for (size_t i = 0; resp_from_api["Absences"].size()-1 > i; i++) {
+    // iterate true all dates 
+    for (size_t i = 0; resp_from_api["Absences"].size() > i; i++) {
         mvwaddch(sum_win, 2+(i*2), 0, ACS_LTEE);
         mvwhline(sum_win, 2+(i*2), 1, ACS_HLINE, DATE_LEN);
         mvwaddch(sum_win, 2+(i*2), 1+DATE_LEN, ACS_PLUS);
